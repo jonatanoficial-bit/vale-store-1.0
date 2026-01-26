@@ -1,0 +1,336 @@
+/*
+ * styles.css
+ *
+ * Este arquivo contém os estilos globais para a Loja de Apps. A abordagem
+ * mobile‑first garante que o layout funcione bem em telas pequenas, com
+ * aprimoramentos progressivos para tablets e desktops. Paletas de cores e
+ * tipografia foram escolhidas para transmitir uma aparência premium.
+ */
+
+/* Variáveis de cores e espaçamentos */
+:root {
+  --color-primary: #5b2be0; /* Roxo vibrante */
+  --color-secondary: #007bff; /* Azul de destaque */
+  --color-accent: #00c6ff; /* Ciano para gradientes */
+  --color-bg: #0e1023; /* Fundo escuro */
+  --color-bg-light: #1b1e3c; /* Fundo mais claro para cartões */
+  --color-text: #ffffff; /* Texto claro */
+  --color-muted: #a5a6bb; /* Texto secundário */
+  --border-radius: 12px;
+  --gap: 16px;
+  --transition-fast: 0.2s ease;
+  --transition-slow: 0.4s ease;
+}
+
+/* Reset básico */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: var(--color-secondary);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* Hero section */
+.hero {
+  position: relative;
+  height: 40vh;
+  min-height: 260px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--color-text);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+}
+.hero .overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 1;
+}
+.hero-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.6) blur(2px);
+  z-index: 0;
+}
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 90%;
+}
+.hero-content h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+.hero-content p {
+  font-size: 1rem;
+  font-weight: 300;
+}
+
+/* Container principal de produtos */
+.container {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--gap);
+  padding: var(--gap);
+  margin-top: var(--gap);
+}
+
+/* Cartão de produto */
+.card {
+  background-color: var(--color-bg-light);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+.card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+.card-content {
+  padding: 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.card-content h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+.card-content p {
+  font-size: 0.9rem;
+  color: var(--color-muted);
+  margin-bottom: 1rem;
+  flex-grow: 1;
+}
+.price {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--color-accent);
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+.button i {
+  margin-right: 0.5rem;
+}
+.button.primary {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  color: var(--color-text);
+}
+.button.primary:hover {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-primary));
+}
+.button.secondary {
+  background-color: var(--color-bg-light);
+  color: var(--color-text);
+  border: 1px solid var(--color-accent);
+}
+.button.secondary:hover {
+  background-color: var(--color-accent);
+  color: var(--color-bg);
+}
+.admin-link {
+  color: var(--color-accent);
+  font-size: 0.9rem;
+  margin-left: auto;
+  display: block;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+/* Rodapé */
+.footer {
+  text-align: center;
+  padding: 1rem;
+  background-color: var(--color-bg-light);
+  font-size: 0.8rem;
+}
+
+/* Admin styles */
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--gap);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  color: var(--color-text);
+}
+.admin-container {
+  flex: 1;
+  padding: var(--gap);
+}
+.login-section {
+  max-width: 400px;
+  margin: 2rem auto;
+  background-color: var(--color-bg-light);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+.login-section h2 {
+  margin-bottom: 1rem;
+}
+.login-section label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-weight: 500;
+}
+.login-section input {
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  border-radius: var(--border-radius);
+  border: none;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* Admin list */
+.admin-list {
+  margin-top: 2rem;
+}
+.admin-list h3 {
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+.admin-list ul {
+  list-style: none;
+}
+.admin-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--color-bg-light);
+  padding: 0.8rem;
+  border-radius: var(--border-radius);
+  margin-bottom: var(--gap);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+.admin-list li span {
+  flex: 1;
+}
+.admin-actions {
+  display: flex;
+  gap: var(--gap);
+  flex-wrap: wrap;
+  margin-bottom: var(--gap);
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal .modal-content {
+  background-color: var(--color-bg-light);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  width: 90%;
+  max-width: 480px;
+  position: relative;
+}
+.modal .close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: var(--color-muted);
+}
+.modal .close:hover {
+  color: var(--color-text);
+}
+.modal-content label {
+  display: block;
+  margin-top: 0.8rem;
+  font-weight: 500;
+}
+.modal-content input,
+.modal-content textarea {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.3rem;
+  border-radius: var(--border-radius);
+  border: none;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+.modal-actions {
+  margin-top: 1.2rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--gap);
+}
+
+/* Utilitários */
+.hidden {
+  display: none !important;
+}
+
+@media (min-width: 768px) {
+  .hero-content h1 {
+    font-size: 2.4rem;
+  }
+  .hero-content p {
+    font-size: 1.2rem;
+  }
+  .card img {
+    height: 180px;
+  }
+}

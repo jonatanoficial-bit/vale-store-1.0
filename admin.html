@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Administração - Loja de Apps</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      integrity="sha512-K5m0d+vBL3Ghq4c40M+3L7B5q5RqRGmH8F0aQK2FOpmswHEQAFAJK2b4Z7vdq7pQigz3hbzF/HJT6TwA24TV1Q=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="admin-header">
+      <h1>Área do Administrador</h1>
+      <button id="logoutBtn" class="button secondary hidden">
+        <i class="fa-solid fa-sign-out-alt"></i> Sair
+      </button>
+    </header>
+    <main class="admin-container">
+      <!-- Tela de login -->
+      <section id="loginSection" class="login-section">
+        <h2>Login</h2>
+        <form id="loginForm">
+          <label for="password">Senha de Administrador:</label>
+          <input
+            type="password"
+            id="password"
+            required
+            placeholder="Digite sua senha"
+          />
+          <button type="submit" class="button primary">Entrar</button>
+        </form>
+      </section>
+      <!-- Tela principal de administração -->
+      <section id="adminSection" class="hidden">
+        <div class="admin-actions">
+          <button id="addProductBtn" class="button primary">
+            <i class="fa-solid fa-plus"></i> Adicionar App
+          </button>
+          <button id="exportDataBtn" class="button secondary">
+            <i class="fa-solid fa-download"></i> Exportar Dados
+          </button>
+          <button id="importDataBtn" class="button secondary">
+            <i class="fa-solid fa-upload"></i> Importar Dados
+          </button>
+        </div>
+        <input type="file" id="importFileInput" class="hidden" accept="application/json" />
+        <div id="productsList" class="admin-list"></div>
+        <div id="salesList" class="admin-list">
+          <h3>Vendas</h3>
+          <ul id="salesUl"></ul>
+        </div>
+      </section>
+      <!-- Modal de produto -->
+      <div id="productModal" class="modal hidden">
+        <div class="modal-content">
+          <span class="close" id="closeModal">&times;</span>
+          <h2 id="modalTitle">Novo App</h2>
+          <form id="productForm">
+            <input type="hidden" id="productId" />
+            <label for="productName">Nome do App</label>
+            <input type="text" id="productName" required />
+            <label for="productDescription">Descrição</label>
+            <textarea id="productDescription" rows="3" required></textarea>
+            <label for="productPrice">Preço (R$)</label>
+            <input type="number" id="productPrice" min="0" step="0.01" required />
+            <label for="productAndroid">URL Android (.apk)</label>
+            <input type="url" id="productAndroid" required />
+            <label for="productIOS">Link iOS (GitHub/Vercel)</label>
+            <input type="url" id="productIOS" />
+            <label for="productImage">Imagem</label>
+            <input type="file" id="productImage" accept="image/*" />
+            <div class="modal-actions">
+              <button type="submit" class="button primary">Salvar</button>
+              <button type="button" id="cancelBtn" class="button secondary">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+    <script src="js/admin.js"></script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "description": "Manifesto inicial com os aplicativos disponíveis.",
+  "products": [
+    {
+      "id": "demo_app",
+      "name": "App Exemplo",
+      "description": "Este é um aplicativo de demonstração para testar a loja. Ele mostra como um app real seria exibido.",
+      "price": 9.99,
+      "android_url": "#",
+      "ios_link": "https://github.com/user/demo-app",
+      "image": "assets/default-app.png",
+      "payLink": "https://www.ton.com.br/linkdeexemplo"
+    }
+  ],
+  "dlcs": [
+    "dlc1/manifest.json"
+  ]
+}

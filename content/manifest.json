@@ -4,12 +4,26 @@
   "products": [
     {
       "id": "demo_app",
+      "slug": "app-exemplo",
       "name": "App Exemplo",
       "description": "Este é um aplicativo de demonstração para testar a loja. Ele mostra como um app real seria exibido.",
+      "longDescription": "Página completa de produto: descrição longa, destaques, screenshots e checkout. Substitua este texto pela descrição real do seu aplicativo.",
+      "features": [
+        "UI premium com performance",
+        "Modo offline (quando possível)",
+        "Atualizações via versão",
+        "Entrega segura via código"
+      ],
+      "tags": ["utilitários", "premium", "android"],
+      "category": "Destaque",
+      "version": "1.0.0",
+      "updatedAt": "2026-01-26",
       "price": 9.99,
       "android_url": "#",
       "ios_link": "https://github.com/user/demo-app",
+      "web_link": "https://vercel.com",
       "image": "assets/default-app.png",
+      "screenshots": ["assets/hero.png"],
       "payLink": "https://www.ton.com.br/linkdeexemplo"
     }
   ],

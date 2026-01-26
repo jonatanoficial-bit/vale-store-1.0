@@ -3,11 +3,19 @@
   "products": [
     {
       "id": "expansao_calc",
+      "slug": "calculadora-avancada",
       "name": "Calculadora Avançada",
       "description": "Uma calculadora avançada com suporte a expressões científicas e interface premium.",
+      "longDescription": "Ideal para estudantes e profissionais. Adicione aqui a descrição completa, prints e changelog.",
+      "features": ["Expressões científicas", "Histórico", "Tema escuro premium"],
+      "tags": ["produtividade", "matemática"],
+      "category": "Produtividade",
+      "version": "1.0.0",
+      "updatedAt": "2026-01-26",
       "price": 4.99,
       "android_url": "#",
       "ios_link": "https://github.com/user/advanced-calculator",
+      "web_link": "https://github.com/user/advanced-calculator",
       "image": "assets/default-app.png",
       "payLink": "https://www.ton.com.br/linkdeexemplo2"
     }

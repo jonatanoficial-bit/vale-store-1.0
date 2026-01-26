@@ -1,33 +1,52 @@
 /*
- * main.js
+ * main.js (Parte 1)
  *
- * Script responsável por carregar os aplicativos a partir de um manifesto JSON
- * e renderizá‑los na página principal. Também implementa a lógica de compra
- * simulada e armazenamento de vendas no localStorage para visualização pela
- * área administrativa. Caso o produto tenha um link de pagamento externo,
- * ele será aberto em nova aba; após a compra, o download do APK ou acesso ao
- * link iOS é liberado manualmente.
+ * Home/Catálogo:
+ * - Carrega catálogo (manifest + DLCs)
+ * - Busca por texto
+ * - Filtros de plataforma
+ * - Cards levam para página de produto
  */
+
+let CATALOG = [];
+let ACTIVE_FILTER = 'all';
 
 document.addEventListener('DOMContentLoaded', () => {
-  loadProducts();
+  boot();
 });
 
-/**
- * Carrega o manifesto de produtos e expansões.
- */
-async function loadProducts() {
+async function boot() {
+  wireUI();
+  CATALOG = await loadCatalog();
+  render();
+}
+
+function wireUI() {
+  const q = document.getElementById('q');
+  if (q) q.addEventListener('input', () => render());
+
+  document.querySelectorAll('.chip[data-filter]').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      ACTIVE_FILTER = chip.getAttribute('data-filter') || 'all';
+      document.querySelectorAll('.chip[data-filter]').forEach((c) => c.classList.remove('is-active'));
+      chip.classList.add('is-active');
+      render();
+    });
+  });
+}
+
+async function loadCatalog() {
   try {
     const response = await fetch('content/manifest.json');
     const data = await response.json();
-    let allProducts = data.products || [];
-    // Carregar manifestos de DLCs se definido
-    if (data.dlcs && Array.isArray(data.dlcs)) {
+    let allProducts = Array.isArray(data.products) ? data.products : [];
+
+    if (Array.isArray(data.dlcs)) {
       for (const dlcPath of data.dlcs) {
         try {
           const dlcResponse = await fetch('content/' + dlcPath);
           const dlcData = await dlcResponse.json();
-          if (dlcData.products) {
+          if (Array.isArray(dlcData.products)) {
             allProducts = allProducts.concat(dlcData.products);
           }
         } catch (err) {
@@ -35,106 +54,149 @@ async function loadProducts() {
         }
       }
     }
-    renderProducts(allProducts);
+
+    // Normalização (para não quebrar com dados incompletos)
+    allProducts = allProducts
+      .map((p) => normalizeProduct(p))
+      .filter((p) => !!p.id && !!p.name);
+
+    return allProducts;
   } catch (error) {
     console.error('Erro ao carregar manifest.json:', error);
     const container = document.getElementById('app-list');
-    container.innerHTML =
-      '<p style="color: red;">Erro ao carregar produtos. Verifique se o arquivo manifest.json existe em /content.</p>';
+    if (container) {
+      container.innerHTML =
+        '<p style="color: #ff7a7a;">Erro ao carregar produtos. Rode o site via servidor (GitHub Pages/Vercel ou Live Server).</p>';
+    }
+    return [];
   }
 }
 
-/**
- * Renderiza os produtos na tela.
- * @param {Array} products
- */
-function renderProducts(products) {
-  const container = document.getElementById('app-list');
-  container.innerHTML = '';
-  products.forEach((product) => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    // Imagem
-    const img = document.createElement('img');
-    img.src = product.image || 'assets/default-app.png';
-    img.alt = product.name;
-    card.appendChild(img);
-    // Conteúdo
-    const content = document.createElement('div');
-    content.className = 'card-content';
-    const title = document.createElement('h3');
-    title.textContent = product.name;
-    const description = document.createElement('p');
-    description.textContent = product.description;
-    const price = document.createElement('div');
-    price.className = 'price';
-    price.textContent = product.price
-      ? `R$ ${Number(product.price).toFixed(2)}`
-      : 'Grátis';
-    // Botões
-    const btnContainer = document.createElement('div');
-    btnContainer.style.display = 'flex';
-    btnContainer.style.gap = '8px';
-    btnContainer.style.flexWrap = 'wrap';
-    // Comprar (se houver link de pagamento)
-    if (product.payLink) {
-      const buyBtn = document.createElement('button');
-      buyBtn.className = 'button primary';
-      buyBtn.innerHTML = '<i class="fa-solid fa-shopping-cart"></i> Comprar';
-      buyBtn.onclick = () => handlePurchase(product);
-      btnContainer.appendChild(buyBtn);
-    }
-    // Download APK
-    if (product.android_url) {
-      const downloadBtn = document.createElement('a');
-      downloadBtn.className = 'button secondary';
-      downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i> Android';
-      downloadBtn.href = product.android_url;
-      downloadBtn.setAttribute('download', '');
-      btnContainer.appendChild(downloadBtn);
-    }
-    // Link iOS
-    if (product.ios_link) {
-      const iosBtn = document.createElement('a');
-      iosBtn.className = 'button secondary';
-      iosBtn.innerHTML = '<i class="fa-brands fa-apple"></i> iOS';
-      iosBtn.href = product.ios_link;
-      iosBtn.target = '_blank';
-      btnContainer.appendChild(iosBtn);
-    }
-    content.appendChild(title);
-    content.appendChild(description);
-    content.appendChild(price);
-    content.appendChild(btnContainer);
-    card.appendChild(content);
-    container.appendChild(card);
+function normalizeProduct(p) {
+  const slug = (p.slug || p.id || '')
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9\-]/g, '');
+
+  return {
+    id: p.id,
+    slug,
+    name: p.name || 'Produto',
+    description: p.description || '',
+    longDescription: p.longDescription || p.description || '',
+    image: p.image || 'assets/default-app.png',
+    screenshots: Array.isArray(p.screenshots) ? p.screenshots : [],
+    features: Array.isArray(p.features) ? p.features : [],
+    tags: Array.isArray(p.tags) ? p.tags : [],
+    category: p.category || 'Geral',
+    price: typeof p.price === 'number' ? p.price : Number(p.price || 0),
+    payLink: p.payLink || '',
+    android_url: p.android_url || '',
+    ios_link: p.ios_link || '',
+    web_link: p.web_link || '',
+    version: p.version || '1.0.0',
+    updatedAt: p.updatedAt || '',
+  };
+}
+
+function getFilteredCatalog() {
+  const q = (document.getElementById('q')?.value || '').trim().toLowerCase();
+
+  return CATALOG.filter((p) => {
+    // filtro plataforma
+    if (ACTIVE_FILTER === 'android' && !p.android_url) return false;
+    if (ACTIVE_FILTER === 'ios' && !p.ios_link) return false;
+    if (ACTIVE_FILTER === 'web' && !p.web_link) return false;
+
+    // busca
+    if (!q) return true;
+    const hay = [p.name, p.description, p.category, ...(p.tags || [])].join(' ').toLowerCase();
+    return hay.includes(q);
   });
 }
 
-/**
- * Lida com a compra de um produto. Este método grava a venda no localStorage e
- * abre o link de pagamento em nova aba. Para fins de demonstração, a venda
- * é considerada concluída imediatamente. O administrador pode visualizar as
- * vendas na área administrativa.
- * @param {Object} product
- */
-function handlePurchase(product) {
-  // Registrando venda no localStorage
-  const sale = {
-    id: product.id,
-    name: product.name,
-    price: product.price,
-    date: new Date().toISOString(),
-  };
-  const sales = JSON.parse(localStorage.getItem('sales') || '[]');
-  sales.push(sale);
-  localStorage.setItem('sales', JSON.stringify(sales));
-  // Abrir link de pagamento em nova aba
-  if (product.payLink) {
-    window.open(product.payLink, '_blank');
+function render() {
+  const list = document.getElementById('app-list');
+  const hint = document.getElementById('results-hint');
+  if (!list) return;
+
+  const filtered = getFilteredCatalog();
+
+  if (hint) {
+    hint.textContent = filtered.length
+      ? `${filtered.length} resultado(s) • Clique em um app para ver detalhes`
+      : 'Nenhum resultado — tente outra busca ou filtro.';
   }
-  // Mensagem de agradecimento
-  alert(
-    'Obrigado pela compra! Após o pagamento, volte para baixar seu aplicativo. O administrador será notificado.'
-  );
+
+  list.innerHTML = '';
+
+  filtered.forEach((p) => {
+    const card = document.createElement('article');
+    card.className = 'app-card';
+    card.setAttribute('data-id', p.id);
+
+    const a = document.createElement('a');
+    a.className = 'app-card-link';
+    a.href = `product.html?slug=${encodeURIComponent(p.slug)}`;
+    a.setAttribute('aria-label', `Ver ${p.name}`);
+
+    const media = document.createElement('div');
+    media.className = 'app-media';
+    const img = document.createElement('img');
+    img.src = p.image;
+    img.alt = p.name;
+    media.appendChild(img);
+
+    const body = document.createElement('div');
+    body.className = 'app-body';
+
+    const top = document.createElement('div');
+    top.className = 'app-top';
+    const title = document.createElement('h3');
+    title.className = 'app-title';
+    title.textContent = p.name;
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    badge.textContent = p.category;
+    top.appendChild(title);
+    top.appendChild(badge);
+
+    const desc = document.createElement('p');
+    desc.className = 'app-desc';
+    desc.textContent = p.description || 'Sem descrição.';
+
+    const meta = document.createElement('div');
+    meta.className = 'app-meta';
+
+    const price = document.createElement('div');
+    price.className = 'app-price';
+    price.textContent = p.price > 0 ? `R$ ${p.price.toFixed(2)}` : 'Grátis';
+
+    const platforms = document.createElement('div');
+    platforms.className = 'platforms';
+    platforms.innerHTML = `
+      ${p.android_url ? '<span class="platform"><i class="fa-brands fa-android"></i></span>' : ''}
+      ${p.ios_link ? '<span class="platform"><i class="fa-brands fa-apple"></i></span>' : ''}
+      ${p.web_link ? '<span class="platform"><i class="fa-solid fa-desktop"></i></span>' : ''}
+    `;
+
+    meta.appendChild(price);
+    meta.appendChild(platforms);
+
+    const cta = document.createElement('div');
+    cta.className = 'app-cta';
+    cta.innerHTML = `<span>Ver detalhes</span><i class="fa-solid fa-arrow-right"></i>`;
+
+    body.appendChild(top);
+    body.appendChild(desc);
+    body.appendChild(meta);
+    body.appendChild(cta);
+
+    a.appendChild(media);
+    a.appendChild(body);
+    card.appendChild(a);
+    list.appendChild(card);
+  });
 }

@@ -20,20 +20,71 @@
     />
   </head>
   <body>
+    <nav class="topbar">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span class="brand-name">AppVault</span>
+      </div>
+      <div class="topbar-actions">
+        <a class="topbar-link" href="admin.html" aria-label="Área do Administrador">
+          <i class="fa-solid fa-shield-halved"></i>
+        </a>
+      </div>
+    </nav>
+
     <header class="hero">
       <div class="overlay"></div>
       <img src="assets/hero.png" alt="Hero" class="hero-image" />
       <div class="hero-content">
         <h1>Marketplace de Aplicativos</h1>
-        <p>Compre e venda aplicativos Android premium com segurança e praticidade</p>
+        <p>Venda apps Android (APK) e distribua acesso iOS/Web com visual premium e entrega inteligente.</p>
+
+        <div class="hero-search">
+          <label class="sr-only" for="q">Buscar</label>
+          <div class="search-input">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input id="q" type="search" placeholder="Buscar por nome, tag ou categoria…" autocomplete="off" />
+          </div>
+
+          <div class="filter-row">
+            <button class="chip is-active" data-filter="all" type="button">
+              <i class="fa-solid fa-fire"></i> Destaques
+            </button>
+            <button class="chip" data-filter="android" type="button">
+              <i class="fa-brands fa-android"></i> Android
+            </button>
+            <button class="chip" data-filter="ios" type="button">
+              <i class="fa-brands fa-apple"></i> iOS
+            </button>
+            <button class="chip" data-filter="web" type="button">
+              <i class="fa-solid fa-desktop"></i> Web/PC
+            </button>
+          </div>
+        </div>
       </div>
     </header>
-    <main class="container" id="app-list">
+
+    <main class="container">
+      <section class="section-head">
+        <div>
+          <h2 class="section-title">Aplicativos em destaque</h2>
+          <p class="section-subtitle" id="results-hint">Carregando catálogo…</p>
+        </div>
+        <a class="ghost-link" href="#catalogo" id="jump-catalog">
+          Ver tudo <i class="fa-solid fa-arrow-right"></i>
+        </a>
+      </section>
+
+      <section class="grid" id="app-list" aria-live="polite">
       <!-- Produtos serão renderizados dinamicamente aqui -->
+      </section>
     </main>
     <footer class="footer">
       <p>© 2026 Loja de Apps. Todos os direitos reservados.</p>
-      <a href="admin.html" class="admin-link">Área do Administrador</a>
+      <div class="footer-links">
+        <a href="admin.html" class="admin-link">Área do Administrador</a>
+        <a href="deliver.html" class="admin-link">Entregar compra</a>
+      </div>
     </footer>
     <script src="js/main.js"></script>
   </body>

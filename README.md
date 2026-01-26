@@ -4,24 +4,31 @@ Este projeto é uma **loja de aplicativos mobile‑first** desenvolvida com HTML
 
 ## 🎯 Funcionalidades principais
 
-1. **Marketplace de apps:** listagem dinâmica de produtos lidos de um arquivo `manifest.json` e de pacotes de expansão em `/content/dlc*/`.
-2. **Compra com link de pagamento:** cada app pode ter um `payLink` que redireciona o comprador para um link de pagamento externo (Ton, Asaas, PagBank ou outro). Após a compra, o aplicativo pode ser baixado ou acessado.
-3. **Suporte a Android e iOS:** botão de download para arquivos `.apk` e link anônimo para iOS (ex.: GitHub ou Vercel).
-4. **Área Administrativa:** login simples com senha armazenada em `localStorage`, CRUD de produtos, importação/exportação de dados em JSON e visualização das vendas registradas.
-5. **Arquitetura expansível:** DLCs são arquivos JSON localizados em `/content/dlc*/manifest.json`, que podem adicionar novos apps sem modificar o núcleo da aplicação.
-6. **Design premium:** UI mobile‑first com gradientes sofisticados, botões com microinterações e tipografia elegante. A aparência é pensada para se assemelhar a um app de loja profissional.
+1. **Home/Catálogo profissional:** busca por texto, filtros por plataforma e cards premium.
+2. **Página de produto completa:** `product.html?slug=...` (descrição longa, destaques, galeria e CTAs).
+3. **Checkout MVP sem custo:** `checkout.html?slug=...` abre o link de pagamento e gera um **código de compra**.
+4. **Entrega por código (sem backend):** `deliver.html` desbloqueia Android/iOS/Web por um código liberado pelo vendedor.
+5. **Área Administrativa:** login simples com senha armazenada em `localStorage`, CRUD de produtos, importação/exportação de dados em JSON e visualização das vendas registradas.
+6. **Arquitetura expansível (DLC):** manifesto + DLCs em `/content/dlc*/`.
+7. **Design premium:** UI mobile‑first com gradientes sofisticados, botões com microinterações e tipografia elegante. A aparência é pensada para se assemelhar a um app de loja profissional.
 
 ## 📦 Estrutura de pastas
 
 ```
 app/
-├── index.html          # Página principal da loja
+├── index.html          # Home/Catálogo
+├── product.html        # Página de produto
+├── checkout.html       # Checkout (MVP sem backend)
+├── deliver.html        # Entrega por código
 ├── admin.html          # Área administrativa
 ├── css/
 │   └── styles.css      # Estilos globais
 ├── js/
-│   ├── main.js         # Lógica da loja (carregamento e compra)
-│   └── admin.js        # Lógica da área de administração
+│   ├── main.js         # Catálogo (busca/filtros)
+│   ├── product.js      # Página de produto
+│   ├── checkout.js     # Checkout (gera código de compra)
+│   ├── deliver.js      # Entrega por código
+│   └── admin.js        # Área de administração
 ├── assets/
 │   ├── hero.png        # Imagem de capa premium (decorativa)
 │   └── default-app.png # Ícone padrão para apps sem imagem
@@ -46,6 +53,16 @@ app/
 3. Para acessar a área administrativa, abra `http://localhost:8080/admin.html` e faça login com a senha padrão `admin`. Você pode alterar a senha na primeira utilização (opção ainda não implementada, mas pode ser feito alterando o valor `adminPassword` no `localStorage`).
 4. **Adicionando apps:** na área administrativa, clique em **Adicionar App**, preencha os campos e salve. As alterações ficam armazenadas em `localStorage` e podem ser exportadas como JSON para atualizar o manifesto.
 5. **Expansões (DLCs):** crie novas pastas dentro de `content/` como `dlc2/`, `dlc3/` etc., cada uma contendo um `manifest.json` no mesmo formato do manifesto principal. Adicione o caminho relativo deste manifesto em `dlcs` dentro de `content/manifest.json` para que a loja o carregue automaticamente.
+
+## 📥 Como hospedar APK sem gastar (zero custo)
+O jeito mais simples e **100% gratuito** é usar o **GitHub Releases**:
+
+1. Crie um repositório no GitHub (gratuito).
+2. Vá em **Releases** → **Draft a new release**.
+3. Faça upload do arquivo `.apk` na release.
+4. Copie o link do arquivo na release e coloque no campo `android_url` do produto.
+
+> Importante: sem backend não dá para impedir que um link público seja compartilhado. Por isso, o fluxo “profissional” (Parte 4) usa links temporários/assinados via backend. Mas para começar com custo zero, GitHub Releases é o caminho mais simples.
 
 ## 💳 Sugestões de integrações de pagamento
 

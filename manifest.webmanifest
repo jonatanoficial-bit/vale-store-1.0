@@ -1,0 +1,15 @@
+{
+  "name": "AppVault - Loja de Apps",
+  "short_name": "AppVault",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#070A14",
+  "theme_color": "#5b2be0",
+  "icons": [
+    {
+      "src": "assets/default-app.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -33,6 +33,7 @@ async function boot() {
   }
 
   document.title = `${product.name} • AppVault`;
+  applySeo(product);
 
   if (container) container.innerHTML = renderProduct(product, site);
 
@@ -44,6 +45,74 @@ async function boot() {
       if (hero && src) hero.setAttribute('src', src);
     });
   });
+}
+
+function applySeo(product) {
+  const desc = (product.description || product.longDescription || '').toString().slice(0, 160);
+  setMeta('description', desc);
+  setMeta('og:title', `${product.name} • AppVault`, true);
+  setMeta('og:description', desc, true);
+  setMeta('og:type', 'product', true);
+
+  // JSON-LD (Schema.org) básico para rich snippets
+  const ld = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: desc,
+    image: [absoluteUrl(product.image)],
+    category: product.category,
+    sku: product.id,
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'BRL',
+      price: Number(product.price || 0).toFixed(2),
+      availability: 'https://schema.org/InStock',
+      url: absoluteUrl(`product.html?slug=${encodeURIComponent(product.slug)}`),
+    },
+  };
+  if (product.rating && product.reviewsCount) {
+    ld.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: String(product.rating),
+      reviewCount: String(product.reviewsCount),
+    };
+  }
+
+  upsertJsonLd(ld);
+}
+
+function setMeta(key, content, isProperty = false) {
+  if (!content) return;
+  const sel = isProperty ? `meta[property="${key}"]` : `meta[name="${key}"]`;
+  let el = document.querySelector(sel);
+  if (!el) {
+    el = document.createElement('meta');
+    if (isProperty) el.setAttribute('property', key);
+    else el.setAttribute('name', key);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('content', content);
+}
+
+function upsertJsonLd(obj) {
+  const id = 'ld-product';
+  let s = document.getElementById(id);
+  if (!s) {
+    s = document.createElement('script');
+    s.type = 'application/ld+json';
+    s.id = id;
+    document.head.appendChild(s);
+  }
+  s.textContent = JSON.stringify(obj);
+}
+
+function absoluteUrl(path) {
+  try {
+    return new URL(path, window.location.href).toString();
+  } catch {
+    return path;
+  }
 }
 
 function getParam(key) {

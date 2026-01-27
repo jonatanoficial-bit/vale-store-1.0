@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacidade • AppVault</title>
+    <meta name="description" content="Política de privacidade do AppVault. Entenda como dados e localStorage são utilizados no MVP sem backend." />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+    <meta name="theme-color" content="#5b2be0" />
+    <link rel="manifest" href="manifest.webmanifest" />
+  </head>
+  <body>
+    <nav class="topbar">
+      <a class="topbar-back" href="index.html" aria-label="Voltar"><i class="fa-solid fa-arrow-left"></i></a>
+      <div class="brand"><span class="brand-mark"></span><span class="brand-name">AppVault</span></div>
+      <a class="topbar-link" href="support.html" aria-label="Suporte"><i class="fa-solid fa-life-ring"></i></a>
+    </nav>
+
+    <main class="container">
+      <section class="doc">
+        <h1>Política de Privacidade</h1>
+        <p class="muted">Versão MVP (0 investimento) — sem backend por padrão.</p>
+
+        <div class="card doc-card">
+          <h2>1. Como seus dados são usados</h2>
+          <p>
+            Neste MVP, o site pode armazenar informações <strong>localmente</strong> no seu navegador via <code>localStorage</code>
+            para melhorar a experiência (ex.: biblioteca, pedidos gerados, entregas liberadas no admin).
+          </p>
+
+          <h2>2. O que NÃO coletamos</h2>
+          <ul>
+            <li>Não coletamos dados pessoais em servidor (por padrão).</li>
+            <li>Não usamos cookies obrigatórios no core do produto.</li>
+            <li>Não rastreamos navegação com analytics pago.</li>
+          </ul>
+
+          <h2>3. Pagamentos</h2>
+          <p>
+            Pagamentos são realizados em páginas externas (links de pagamento). O AppVault não processa nem armazena dados
+            do cartão.
+          </p>
+
+          <h2>4. Alterações</h2>
+          <p>
+            Esta política pode evoluir quando um backend for integrado (ex.: para confirmar pagamentos automaticamente).
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="about.html" class="admin-link">Sobre</a>
+        <a href="terms.html" class="admin-link">Termos</a>
+        <a href="privacy.html" class="admin-link">Privacidade</a>
+        <a href="support.html" class="admin-link">Suporte</a>
+      </div>
+      <p>© 2026 AppVault.</p>
+    </footer>
+
+    <script src="js/pwa.js"></script>
+  </body>
+</html>

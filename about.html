@@ -3,12 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Minha Biblioteca • AppVault</title>
-    <meta name="description" content="Acesse novamente seus aplicativos comprados (salvo no navegador)." />
-    <meta name="theme-color" content="#5b2be0" />
-    <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="icon" href="assets/default-app.png" />
+    <title>Sobre • AppVault</title>
+    <meta name="description" content="AppVault é um marketplace independente para venda e distribuição de aplicativos Android e acesso iOS/Web." />
     <link rel="stylesheet" href="css/styles.css" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#5b2be0" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
@@ -35,22 +34,32 @@
       </a>
     </nav>
 
-    <main class="container">
-      <section class="section-head">
-        <div>
-          <h2 class="section-title">Minha Biblioteca</h2>
-          <p class="section-subtitle">Apps que você já desbloqueou neste dispositivo/navegador.</p>
-        </div>
-      </section>
-
-      <section id="libraryList" class="grid"></section>
-
-      <section class="notice">
-        <h3><i class="fa-solid fa-circle-info"></i> Importante</h3>
-        <p>
-          Como este projeto funciona com <strong>0 investimento</strong> e sem backend, sua biblioteca fica salva
-          apenas neste navegador. Se você limpar o cache, precisará desbloquear novamente com o seu código.
+    <main class="container legal">
+      <section class="legal-card">
+        <h1>Sobre a AppVault</h1>
+        <p class="muted">
+          A AppVault é um marketplace independente para vender aplicativos Android (APK) e distribuir acesso
+          a iOS/Web por link. Este projeto foi desenhado para operar com <strong>0 investimento</strong>
+          e crescer para automação quando você estiver pronto.
         </p>
+
+        <div class="legal-grid">
+          <div class="legal-item">
+            <h3>Missão</h3>
+            <p>Entregar uma experiência premium, simples e segura para compradores e vendedores.</p>
+          </div>
+          <div class="legal-item">
+            <h3>Como funciona</h3>
+            <p>
+              Você cria produtos no Admin, usa link de pagamento e libera entrega por código.
+              Android pode usar GitHub Releases grátis para hospedar APK.
+            </p>
+          </div>
+          <div class="legal-item">
+            <h3>Suporte</h3>
+            <p>Configure seu WhatsApp no <code>content/manifest.json</code> e o site exibe contato em 1 toque.</p>
+          </div>
+        </div>
       </section>
     </main>
 
@@ -64,7 +73,6 @@
       </div>
     </footer>
 
-    <script src="js/library.js"></script>
     <script src="js/pwa.js"></script>
   </body>
 </html>

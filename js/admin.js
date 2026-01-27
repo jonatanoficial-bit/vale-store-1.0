@@ -26,6 +26,12 @@ const deliveriesListDiv = document.getElementById('deliveriesList');
 const couponsListDiv = document.getElementById('couponsList');
 const salesUl = document.getElementById('salesUl');
 
+// Dashboard (Parte 6)
+const dashboardGrid = document.getElementById('dashboardGrid');
+const dashTopProducts = document.getElementById('dashTopProducts');
+const copyMsgPurchaseBtn = document.getElementById('copyMsgPurchaseBtn');
+const copyMsgDeliveryBtn = document.getElementById('copyMsgDeliveryBtn');
+
 const addProductBtn = document.getElementById('addProductBtn');
 const exportBtn = document.getElementById('exportDataBtn');
 const exportBackupBtn = document.getElementById('exportBackupBtn');
@@ -55,6 +61,13 @@ const closeCouponModal = document.getElementById('closeCouponModal');
 const cancelCouponBtn = document.getElementById('cancelCouponBtn');
 const couponForm = document.getElementById('couponForm');
 const couponModalTitle = document.getElementById('couponModalTitle');
+
+// Configurações (Parte 5)
+const changePassForm = document.getElementById('changePassForm');
+const passCurrent = document.getElementById('passCurrent');
+const passNew = document.getElementById('passNew');
+const passNew2 = document.getElementById('passNew2');
+const passMsg = document.getElementById('passMsg');
 
 // ====== Storage keys ======
 const K_PRODUCTS = 'products';
@@ -100,6 +113,22 @@ function wireCoreEvents() {
   couponForm?.addEventListener('submit', saveCoupon);
   cancelCouponBtn?.addEventListener('click', closeCouponModalFn);
   closeCouponModal?.addEventListener('click', closeCouponModalFn);
+
+  // Config
+  changePassForm?.addEventListener('submit', handleChangePassword);
+
+  // Dashboard (mensagens prontas)
+  copyMsgPurchaseBtn?.addEventListener('click', () => {
+    const msg = makeWhatsAppTemplate('purchase');
+    copyText(msg);
+    alert('Mensagem copiada! Cole no WhatsApp.');
+  });
+
+  copyMsgDeliveryBtn?.addEventListener('click', () => {
+    const msg = makeWhatsAppTemplate('delivery');
+    copyText(msg);
+    alert('Mensagem copiada! Cole no WhatsApp.');
+  });
 }
 
 function wireTabs() {
@@ -115,13 +144,17 @@ function wireTabs() {
 }
 
 function showTab(tab) {
-  const panels = ['products', 'orders', 'deliveries', 'coupons', 'sales'];
+  const panels = ['dashboard', 'products', 'orders', 'deliveries', 'coupons', 'sales', 'settings'];
   panels.forEach((p) => {
     const el = document.getElementById('tab-' + p);
     if (!el) return;
     if (p === tab) el.classList.remove('hidden');
     else el.classList.add('hidden');
   });
+
+  if (tab === 'dashboard') {
+    renderDashboard();
+  }
 }
 
 function showLogin() {
@@ -156,6 +189,38 @@ function handleLogin(e) {
 function handleLogout() {
   localStorage.setItem(K_ADMIN_LOGGED, 'false');
   showLogin();
+}
+
+function handleChangePassword(e) {
+  e.preventDefault();
+  const cur = (passCurrent?.value || '').trim();
+  const next = (passNew?.value || '').trim();
+  const next2 = (passNew2?.value || '').trim();
+
+  const stored = localStorage.getItem(K_ADMIN_PASS) || DEFAULT_PASSWORD;
+  const setMsg = (t) => {
+    if (passMsg) passMsg.textContent = t;
+  };
+
+  if (cur !== stored) {
+    setMsg('Senha atual incorreta.');
+    return;
+  }
+  if (next.length < 6) {
+    setMsg('A nova senha deve ter no mínimo 6 caracteres.');
+    return;
+  }
+  if (next !== next2) {
+    setMsg('Confirmação não confere.');
+    return;
+  }
+  if (next === DEFAULT_PASSWORD) {
+    setMsg('Dica: escolha uma senha diferente de "admin".');
+  }
+
+  localStorage.setItem(K_ADMIN_PASS, next);
+  changePassForm?.reset();
+  setMsg('Senha atualizada com sucesso.');
 }
 
 // ====== Products ======
@@ -534,9 +599,13 @@ function confirmAndDeliver(order, idx) {
   };
   setOrders(orders);
 
-  // UX: mostra código pronto
-  alert(`Entrega liberada!\n\nEnvie este CÓDIGO DE ENTREGA ao cliente:\n\n${deliveryCode}\n\nEle vai usar em deliver.html`);
-  copyText(deliveryCode);
+  // UX: mostra código pronto + mensagem sugerida
+  const msg = makeWhatsAppTemplate('delivery').replace('{CODIGO_ENTREGA}', deliveryCode);
+  alert(
+    `Entrega liberada!\n\nCÓDIGO DE ENTREGA:\n${deliveryCode}\n\nSugestão de mensagem (copiada):\n\n${msg}`
+  );
+  // Copia a mensagem pronta (mais útil que copiar só o código)
+  copyText(msg);
 
   renderOrders();
   renderDeliveries();
@@ -654,6 +723,100 @@ function renderSales() {
     li.textContent = `${sale.name} – R$ ${Number(sale.price || 0).toFixed(2)} em ${date.toLocaleString()}`;
     salesUl.appendChild(li);
   });
+}
+
+// ====== Dashboard (Parte 6) ======
+function renderDashboard() {
+  if (!dashboardGrid) return;
+  const orders = getOrders();
+  const deliveries = getDeliveries();
+
+  const delivered = orders.filter((o) => o.status === 'delivered').length;
+  const waiting = orders.filter((o) => o.status === 'paid_unverified').length;
+  const totalOrders = orders.length;
+
+  const revenue = orders.reduce((sum, o) => sum + Number(o.finalPrice ?? o.price ?? 0), 0);
+  const couponsUsed = orders.filter((o) => o.coupon && o.coupon.code).length;
+  const deliveryCount = Object.keys(deliveries || {}).length;
+
+  const top = computeTopProducts(orders);
+
+  dashboardGrid.innerHTML = renderDashCards({
+    totalOrders,
+    delivered,
+    waiting,
+    revenue,
+    couponsUsed,
+    deliveryCount
+  });
+
+  if (dashTopProducts) {
+    dashTopProducts.innerHTML = top.length
+      ? top
+          .map((t) =>
+            `<div class="dash-row"><span>${escapeHtml(t.name)}</span><strong>${t.count}</strong></div>`
+          )
+          .join('')
+      : '<div class="muted">Sem dados ainda.</div>';
+  }
+}
+
+function renderDashCards(s) {
+  const money = (n) => `R$ ${Number(n || 0).toFixed(2)}`;
+  return `
+    <div class="dash-card">
+      <div class="dash-k">Pedidos</div>
+      <div class="dash-v">${Number(s.totalOrders || 0)}</div>
+      <div class="dash-h">Total gerados no checkout</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-k">Entregues</div>
+      <div class="dash-v">${Number(s.delivered || 0)}</div>
+      <div class="dash-h">Pedidos com entrega liberada</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-k">Aguardando</div>
+      <div class="dash-v">${Number(s.waiting || 0)}</div>
+      <div class="dash-h">Falta confirmar pagamento</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-k">Receita (estim.)</div>
+      <div class="dash-v">${money(s.revenue)}</div>
+      <div class="dash-h">Somatório do total do pedido</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-k">Cupons usados</div>
+      <div class="dash-v">${Number(s.couponsUsed || 0)}</div>
+      <div class="dash-h">Campanhas aplicadas</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-k">Cofre</div>
+      <div class="dash-v">${Number(s.deliveryCount || 0)}</div>
+      <div class="dash-h">Códigos de entrega ativos</div>
+    </div>
+  `;
+}
+
+function computeTopProducts(orders) {
+  const map = new Map();
+  for (const o of orders) {
+    const name = String(o.productName || 'Produto');
+    map.set(name, (map.get(name) || 0) + 1);
+  }
+  return Array.from(map.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+}
+
+function makeWhatsAppTemplate(kind) {
+  // Templates sem custo: copie/cole
+  const support = safeJson(localStorage.getItem('support'), {});
+  const base = support.message ? String(support.message) : 'Olá!';
+  if (kind === 'delivery') {
+    return `${base}\n\n✅ Pagamento confirmado.\n\nCódigo de entrega: {CODIGO_ENTREGA}\n\nAbra: deliver.html\nCole o código e baixe/acesse seus links.\n\nSe precisar, me chame aqui.`;
+  }
+  return `${base}\n\n📌 Para confirmar sua compra, me envie:\n1) Comprovante\n2) Código de compra: {CODIGO_COMPRA}\n\nAssim que eu validar, te envio o código de entrega.`;
 }
 
 // ====== Export / Import ======

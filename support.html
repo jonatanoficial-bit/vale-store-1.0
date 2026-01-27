@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Suporte • AppVault</title>
+    <meta name="description" content="Central de suporte: entrega, pagamentos e dúvidas frequentes." />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      integrity="sha512-K5m0d+vBL3Ghq4c40M+3L7B5q5RqRGmH8F0aQK2FOpmswHEQAFAJK2b4Z7vdq7pQigz3hbzF/HJT6TwA24TV1Q=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#5b2be0" />
+  </head>
+  <body>
+    <nav class="topbar">
+      <a class="topbar-back" href="index.html" aria-label="Voltar">
+        <i class="fa-solid fa-arrow-left"></i>
+      </a>
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span class="brand-name">AppVault</span>
+      </div>
+      <div class="topbar-actions">
+        <a class="topbar-link" href="deliver.html" aria-label="Já comprei">
+          <i class="fa-solid fa-key"></i>
+        </a>
+      </div>
+    </nav>
+
+    <main class="container">
+      <section class="legal">
+        <h1 class="section-title">Suporte</h1>
+        <p class="muted">
+          Esta central ajuda com problemas comuns de compra e entrega. Como este projeto foi desenhado para funcionar
+          com <strong>0 investimento</strong>, o fluxo de pagamento pode ser via link e a liberação de entrega pode ser
+          manual (assistida).
+        </p>
+
+        <div class="card" style="margin-top: 16px">
+          <h2>Não recebi meu app</h2>
+          <ol class="muted">
+            <li>Confirme se você recebeu um <strong>código de entrega</strong> do vendedor.</li>
+            <li>Acesse <a href="deliver.html">deliver.html</a> e cole o código.</li>
+            <li>Se o código não funcionar, envie o comprovante e o código de compra ao suporte.</li>
+          </ol>
+        </div>
+
+        <div class="card" style="margin-top: 12px">
+          <h2>Instalação APK (Android)</h2>
+          <ul class="muted">
+            <li>Baixe o APK em uma rede segura.</li>
+            <li>Ative “Instalar apps desconhecidos” no seu navegador/gerenciador de arquivos.</li>
+            <li>Se o Android bloquear, verifique permissões e tente novamente.</li>
+          </ul>
+        </div>
+
+        <div class="card" style="margin-top: 12px">
+          <h2>Pagamentos</h2>
+          <p class="muted">
+            O pagamento pode ser feito via Pix ou cartão (dependendo do link). Após o pagamento, envie o comprovante
+            e o <strong>código de compra</strong> gerado no checkout.
+          </p>
+        </div>
+
+        <div class="card" style="margin-top: 12px">
+          <h2>Contato</h2>
+          <p class="muted">O botão de WhatsApp aparece no site quando configurado no <code>manifest.json</code>.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>© 2026 AppVault.</p>
+      <div class="footer-links">
+        <a href="about.html" class="admin-link">Sobre</a>
+        <a href="terms.html" class="admin-link">Termos</a>
+        <a href="privacy.html" class="admin-link">Privacidade</a>
+      </div>
+    </footer>
+
+    <script src="js/pwa.js"></script>
+  </body>
+</html>

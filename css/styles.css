@@ -447,6 +447,50 @@ body {
   flex-wrap: wrap;
 }
 
+/* ===== Parte 5: páginas institucionais ===== */
+.legal {
+  padding: 18px 0 44px;
+}
+
+.prose {
+  max-width: 860px;
+  margin: 0 auto;
+  color: rgba(255, 255, 255, 0.86);
+  line-height: 1.65;
+}
+
+.prose h1,
+.prose h2,
+.prose h3 {
+  color: rgba(255, 255, 255, 0.96);
+  line-height: 1.2;
+  margin: 18px 0 10px;
+}
+
+.prose p {
+  margin: 10px 0;
+}
+
+.prose ul,
+.prose ol {
+  margin: 10px 0 10px 18px;
+}
+
+.prose code {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.notice {
+  margin: 14px 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(91, 43, 224, 0.12);
+  border: 1px solid rgba(91, 43, 224, 0.28);
+}
+
 a {
   color: var(--color-secondary);
   text-decoration: none;
@@ -1123,4 +1167,90 @@ a:hover {
   .product-grid { grid-template-columns: 1fr 1fr; }
   .app-card-link { grid-template-columns: 110px 1fr; }
   .app-media { width: 110px; height: 110px; }
+}
+
+/* ====== FAQ / Accordion ====== */
+.faq {
+  display: grid;
+  gap: 10px;
+}
+
+.faq-item {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 14px;
+  padding: 10px 12px;
+  backdrop-filter: blur(10px);
+}
+
+.faq-item summary {
+  cursor: pointer;
+  font-weight: 800;
+  list-style: none;
+}
+
+.faq-item summary::-webkit-details-marker { display: none; }
+
+.faq-item summary::after {
+  content: '▾';
+  float: right;
+  opacity: .8;
+}
+
+.faq-item[open] summary::after { content: '▴'; }
+
+.faq-item p {
+  margin: 10px 0 0;
+  opacity: .92;
+  line-height: 1.55;
+}
+
+/* ====== Dashboard ====== */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dash-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.dash-k { font-size: 12px; opacity: .85; }
+.dash-v { font-size: 22px; font-weight: 900; margin-top: 2px; }
+.dash-h { font-size: 12px; opacity: .75; margin-top: 6px; }
+
+.dash-split {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.dash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dash-list {
+  display: grid;
+  gap: 8px;
+}
+
+.dash-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (min-width: 860px) {
+  .dash-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dash-split { grid-template-columns: 1fr 1fr; }
 }

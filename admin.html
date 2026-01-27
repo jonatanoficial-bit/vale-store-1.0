@@ -3,7 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Administração - Loja de Apps</title>
+    <title>Administração • AppVault</title>
+    <meta name="description" content="Painel administrativo do AppVault (0 custo): produtos, pedidos, entregas, cupons e configurações." />
+    <meta name="theme-color" content="#5b2be0" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/default-app.png" />
     <link rel="stylesheet" href="css/styles.css" />
     <link
       rel="stylesheet"
@@ -57,6 +61,9 @@
         </div>
 
         <div class="segmented" role="tablist" aria-label="Seções do admin">
+          <button class="segmented-btn" data-tab="dashboard" type="button">
+            <i class="fa-solid fa-gauge-high"></i> Dashboard
+          </button>
           <button class="segmented-btn is-active" data-tab="products" type="button">
             <i class="fa-solid fa-box"></i> Produtos
           </button>
@@ -72,9 +79,51 @@
           <button class="segmented-btn" data-tab="sales" type="button">
             <i class="fa-solid fa-chart-line"></i> Vendas
           </button>
+          <button class="segmented-btn" data-tab="settings" type="button">
+            <i class="fa-solid fa-gear"></i> Config
+          </button>
         </div>
 
         <input type="file" id="importFileInput" class="hidden" accept="application/json" />
+
+        <div id="tab-dashboard" class="tab-panel hidden">
+          <div class="panel-head">
+            <h3>Dashboard executivo</h3>
+            <p class="muted">Resumo operacional (0 custo): pedidos, entregas, receita estimada e top apps.</p>
+          </div>
+          <div id="dashboardGrid" class="dash-grid"></div>
+          <div class="card" style="padding:16px; margin-top:12px">
+            <h4 style="margin:0 0 10px">Mensagens prontas (WhatsApp)</h4>
+            <p class="muted" style="margin:0 0 10px">
+              Copie e cole no WhatsApp para agilizar suporte e entrega.
+            </p>
+            <div class="dash-actions">
+              <button id="copyMsgPurchaseBtn" class="button secondary" type="button">
+                <i class="fa-solid fa-copy"></i> Copiar mensagem (código de compra)
+              </button>
+              <button id="copyMsgDeliveryBtn" class="button secondary" type="button">
+                <i class="fa-solid fa-copy"></i> Copiar mensagem (código de entrega)
+              </button>
+            </div>
+            <p class="muted" style="margin:10px 0 0">Dica: você pode personalizar os textos no arquivo <code>content/manifest.json</code> (campo <code>support.message</code>).</p>
+          </div>
+
+          <div class="dash-split">
+            <div class="card" style="padding:14px">
+              <h4 class="card-title" style="margin:0 0 10px">Top produtos</h4>
+              <div id="dashTopProducts" class="dash-list"></div>
+            </div>
+            <div class="card" style="padding:14px">
+              <h4 class="card-title" style="margin:0 0 10px">Atalhos de operação</h4>
+              <div class="dash-actions">
+                <a class="button secondary" href="deliver.html" target="_blank" rel="noreferrer"><i class="fa-solid fa-key"></i> Abrir Entrega</a>
+                <a class="button secondary" href="library.html" target="_blank" rel="noreferrer"><i class="fa-solid fa-book"></i> Abrir Biblioteca</a>
+                <a class="button secondary" href="install.html" target="_blank" rel="noreferrer"><i class="fa-solid fa-mobile-screen"></i> Guia APK</a>
+              </div>
+              <p class="muted" style="margin:10px 0 0">Dica: use “Backup completo” antes de atualizações.</p>
+            </div>
+          </div>
+        </div>
 
         <div id="tab-products" class="tab-panel">
           <div id="productsList" class="admin-list"></div>
@@ -134,6 +183,38 @@
           <div id="salesList" class="admin-list">
             <h3>Vendas (registro local)</h3>
             <ul id="salesUl"></ul>
+          </div>
+        </div>
+
+        <div id="tab-settings" class="tab-panel hidden">
+          <div class="panel-head">
+            <h3>Configurações</h3>
+            <p class="muted">
+              Como o projeto roda 100% no navegador, a senha do admin fica salva em <code>localStorage</code>.
+              Use uma senha forte. Se você esquecer, basta limpar o storage do navegador.
+            </p>
+          </div>
+
+          <div class="card" style="padding:16px; margin-top: 12px">
+            <h4 style="margin:0 0 10px">Trocar senha do Admin</h4>
+            <form id="changePassForm" class="form">
+              <label class="field">
+                <span class="label">Senha atual</span>
+                <input id="passCurrent" type="password" autocomplete="current-password" required />
+              </label>
+              <label class="field">
+                <span class="label">Nova senha</span>
+                <input id="passNew" type="password" autocomplete="new-password" minlength="6" required />
+              </label>
+              <label class="field">
+                <span class="label">Confirmar nova senha</span>
+                <input id="passNew2" type="password" autocomplete="new-password" minlength="6" required />
+              </label>
+              <button class="button primary" type="submit">
+                <i class="fa-solid fa-key"></i> Atualizar senha
+              </button>
+              <p id="passMsg" class="muted" style="margin:10px 0 0"></p>
+            </form>
           </div>
         </div>
       </section>
@@ -269,5 +350,6 @@
       </div>
     </main>
     <script src="js/admin.js"></script>
+    <script src="js/pwa.js"></script>
   </body>
 </html>

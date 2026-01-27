@@ -50,7 +50,7 @@ app/
    ```
 
    Em seguida, acesse `http://localhost:8080/index.html` no navegador.
-3. Para acessar a área administrativa, abra `http://localhost:8080/admin.html` e faça login com a senha padrão `admin`. Você pode alterar a senha na primeira utilização (opção ainda não implementada, mas pode ser feito alterando o valor `adminPassword` no `localStorage`).
+3. Para acessar a área administrativa, abra `http://localhost:8080/admin.html` e faça login com a senha padrão `admin`. Na aba **Config**, você pode trocar a senha (fica salva em `localStorage`).
 4. **Adicionando apps:** na área administrativa, clique em **Adicionar App**, preencha os campos e salve. As alterações ficam armazenadas em `localStorage` e podem ser exportadas como JSON para atualizar o manifesto.
 5. **Expansões (DLCs):** crie novas pastas dentro de `content/` como `dlc2/`, `dlc3/` etc., cada uma contendo um `manifest.json` no mesmo formato do manifesto principal. Adicione o caminho relativo deste manifesto em `dlcs` dentro de `content/manifest.json` para que a loja o carregue automaticamente.
 
@@ -63,6 +63,26 @@ O jeito mais simples e **100% gratuito** é usar o **GitHub Releases**:
 4. Copie o link do arquivo na release e coloque no campo `android_url` do produto.
 
 > Importante: sem backend não dá para impedir que um link público seja compartilhado. Por isso, o fluxo “profissional” (Parte 4) usa links temporários/assinados via backend. Mas para começar com custo zero, GitHub Releases é o caminho mais simples.
+
+## 📲 PWA (instalável, 0 custo)
+
+O AppVault inclui **PWA** (manifest + service worker) para:
+
+- melhorar performance (cache)
+- funcionar melhor em conexão ruim
+- permitir “Adicionar à tela inicial” (sensação de app)
+
+Em Android/Chrome, abra o site e use **Adicionar à tela inicial**.
+
+## 📲 PWA (instalável)
+
+O AppVault inclui **PWA** (Service Worker + manifest) para:
+
+- cache/offline básico
+- performance melhor (cache de assets)
+- sensação de “app instalado” na tela inicial do Android
+
+Para testar: abra o site no celular e use “Adicionar à tela inicial”.
 
 ## 💳 Sugestões de integrações de pagamento
 

@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Checkout • AppVault</title>
+    <meta name="description" content="Checkout do AppVault: pagamento por link, cupom e geração de código de compra." />
+    <meta name="theme-color" content="#5b2be0" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/default-app.png" />
     <link rel="stylesheet" href="css/styles.css" />
     <link
       rel="stylesheet"
@@ -35,6 +39,32 @@
       <section class="checkout" id="checkout"></section>
 
       <section class="notice">
+        <h3><i class="fa-solid fa-circle-question"></i> Dúvidas rápidas</h3>
+        <div class="faq">
+          <details class="faq-item">
+            <summary>Como recebo o app depois de pagar?</summary>
+            <p>
+              Você paga no provedor (Ton/PagBank/etc.) e clica em <strong>“Já paguei”</strong> para gerar um
+              <strong>código de compra</strong>. Envie o código + comprovante para o vendedor.
+              Depois ele libera um <strong>código de entrega</strong> para você usar na tela de entrega.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Como instalar APK no Android?</summary>
+            <p>
+              Veja o guia passo a passo: <a class="ghost-link" href="install.html">Como instalar APK</a>.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Posso rebaixar/compartilhar o link do APK?</summary>
+            <p>
+              Não recomendamos. O fluxo de entrega é por código, e o vendedor pode trocar links/versões a qualquer momento.
+            </p>
+          </details>
+        </div>
+      </section>
+
+      <section class="notice">
         <h3><i class="fa-solid fa-lock"></i> Sem investimento: fluxo MVP</h3>
         <p>
           Este checkout foi desenhado para funcionar sem backend e sem custo. Você coloca um
@@ -50,5 +80,6 @@
     </footer>
 
     <script src="js/checkout.js"></script>
+    <script src="js/pwa.js"></script>
   </body>
 </html>

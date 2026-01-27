@@ -60,6 +60,18 @@
               <i class="fa-solid fa-desktop"></i> Web/PC
             </button>
           </div>
+
+          <div class="filter-row filter-row--secondary">
+            <div class="select">
+              <i class="fa-solid fa-layer-group"></i>
+              <select id="category" aria-label="Filtrar por categoria">
+                <option value="all">Todas as categorias</option>
+              </select>
+            </div>
+            <a class="chip chip--link" href="deliver.html" title="Entregar compra">
+              <i class="fa-solid fa-key"></i> Já comprei
+            </a>
+          </div>
         </div>
       </div>
     </header>
@@ -75,6 +87,24 @@
         </a>
       </section>
 
+      <section class="rails" aria-label="Vitrines">
+        <div class="rail">
+          <div class="rail-head">
+            <h3>Mais vendidos</h3>
+            <p>Baseado nos pedidos gerados no seu navegador (MVP)</p>
+          </div>
+          <div class="rail-track" id="rail-best"></div>
+        </div>
+
+        <div class="rail">
+          <div class="rail-head">
+            <h3>Novos e atualizados</h3>
+            <p>Ordenado por data de atualização</p>
+          </div>
+          <div class="rail-track" id="rail-new"></div>
+        </div>
+      </section>
+
       <section class="grid" id="app-list" aria-live="polite">
       <!-- Produtos serão renderizados dinamicamente aqui -->
       </section>
@@ -87,5 +117,8 @@
       </div>
     </footer>
     <script src="js/main.js"></script>
+    <a id="wa-fab" class="wa-fab" href="#" rel="noopener" aria-label="Suporte WhatsApp">
+      <i class="fa-brands fa-whatsapp"></i>
+    </a>
   </body>
 </html>

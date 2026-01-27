@@ -9,7 +9,9 @@
  */
 
 let CATALOG = [];
+let SITE = { support: { whatsapp: '', message: '' } };
 let ACTIVE_FILTER = 'all';
+let ACTIVE_CATEGORY = 'all';
 
 document.addEventListener('DOMContentLoaded', () => {
   boot();
@@ -18,7 +20,71 @@ document.addEventListener('DOMContentLoaded', () => {
 async function boot() {
   wireUI();
   CATALOG = await loadCatalog();
+  hydrateCategoryDropdown(CATALOG);
+  hydrateWhatsAppFab();
+  renderRails();
   render();
+}
+
+function renderRails() {
+  const bestEl = document.getElementById('rail-best');
+  const newEl = document.getElementById('rail-new');
+  if (!bestEl || !newEl) return;
+
+  const orders = safeJson(localStorage.getItem('orders'), []);
+  const counts = new Map();
+  for (const o of orders) {
+    const slug = o?.slug;
+    if (!slug) continue;
+    counts.set(slug, (counts.get(slug) || 0) + 1);
+  }
+
+  const best = [...CATALOG]
+    .map((p) => ({ p, c: counts.get(p.slug) || 0 }))
+    .sort((a, b) => b.c - a.c)
+    .slice(0, 8)
+    .map((x) => x.p);
+
+  const newest = [...CATALOG]
+    .sort((a, b) => (new Date(b.updatedAt || 0).getTime() || 0) - (new Date(a.updatedAt || 0).getTime() || 0))
+    .slice(0, 8);
+
+  bestEl.innerHTML = '';
+  newEl.innerHTML = '';
+  best.forEach((p) => bestEl.appendChild(buildRailCard(p, counts.get(p.slug) || 0)));
+  newest.forEach((p) => newEl.appendChild(buildRailCard(p, counts.get(p.slug) || 0)));
+}
+
+function buildRailCard(p, soldCount) {
+  const card = document.createElement('a');
+  card.className = 'card';
+  card.href = `product.html?slug=${encodeURIComponent(p.slug)}`;
+  card.innerHTML = `
+    <div class="card-media"><img src="${p.image}" alt="${escapeHtml(p.name)}" /></div>
+    <div class="card-body">
+      <div class="card-title">${escapeHtml(p.name)}</div>
+      <div class="card-sub">${escapeHtml(p.category || 'Geral')}</div>
+      <div class="card-meta">
+        <span>${p.price > 0 ? `R$ ${p.price.toFixed(2)}` : 'Grátis'}</span>
+        <span class="dot"></span>
+        <span>${p.rating ? `${p.rating.toFixed(1)}★` : '—'}</span>
+        ${soldCount ? `<span class="dot"></span><span>${soldCount} venda(s)</span>` : ''}
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function safeJson(raw, fallback) {
+  try {
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function escapeHtml(str) {
+  return String(str || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 function wireUI() {
@@ -33,12 +99,29 @@ function wireUI() {
       render();
     });
   });
+
+  const cat = document.getElementById('category');
+  if (cat) {
+    cat.addEventListener('change', () => {
+      ACTIVE_CATEGORY = cat.value || 'all';
+      render();
+    });
+  }
 }
 
 async function loadCatalog() {
   try {
     const response = await fetch('content/manifest.json');
     const data = await response.json();
+
+    // Config do site (suporte)
+    SITE = {
+      support: {
+        whatsapp: (data.support?.whatsapp || '').toString(),
+        message: (data.support?.message || '').toString(),
+      },
+    };
+
     let allProducts = Array.isArray(data.products) ? data.products : [];
 
     if (Array.isArray(data.dlcs)) {
@@ -59,6 +142,9 @@ async function loadCatalog() {
     allProducts = allProducts
       .map((p) => normalizeProduct(p))
       .filter((p) => !!p.id && !!p.name);
+
+    hydrateCategoryDropdown(allProducts);
+    hydrateWhatsAppFab();
 
     return allProducts;
   } catch (error) {
@@ -91,6 +177,10 @@ function normalizeProduct(p) {
     features: Array.isArray(p.features) ? p.features : [],
     tags: Array.isArray(p.tags) ? p.tags : [],
     category: p.category || 'Geral',
+    rating: typeof p.rating === 'number' ? p.rating : Number(p.rating || 0),
+    reviewsCount: typeof p.reviewsCount === 'number' ? p.reviewsCount : Number(p.reviewsCount || 0),
+    faq: Array.isArray(p.faq) ? p.faq : [],
+    changelog: Array.isArray(p.changelog) ? p.changelog : [],
     price: typeof p.price === 'number' ? p.price : Number(p.price || 0),
     payLink: p.payLink || '',
     android_url: p.android_url || '',
@@ -105,6 +195,9 @@ function getFilteredCatalog() {
   const q = (document.getElementById('q')?.value || '').trim().toLowerCase();
 
   return CATALOG.filter((p) => {
+    // filtro categoria
+    if (ACTIVE_CATEGORY !== 'all' && (p.category || '') !== ACTIVE_CATEGORY) return false;
+
     // filtro plataforma
     if (ACTIVE_FILTER === 'android' && !p.android_url) return false;
     if (ACTIVE_FILTER === 'ios' && !p.ios_link) return false;
@@ -115,6 +208,36 @@ function getFilteredCatalog() {
     const hay = [p.name, p.description, p.category, ...(p.tags || [])].join(' ').toLowerCase();
     return hay.includes(q);
   });
+}
+
+function hydrateCategoryDropdown(products) {
+  const el = document.getElementById('category');
+  if (!el) return;
+  const categories = Array.from(new Set((products || []).map((p) => p.category || 'Geral'))).sort((a, b) =>
+    a.localeCompare(b)
+  );
+
+  // manter "all" e reconstruir
+  el.innerHTML = '<option value="all">Todas as categorias</option>';
+  for (const c of categories) {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    el.appendChild(opt);
+  }
+}
+
+function hydrateWhatsAppFab() {
+  const fab = document.getElementById('wa-fab');
+  if (!fab) return;
+  const raw = (SITE.support?.whatsapp || '').replace(/\D/g, '');
+  if (!raw || raw.length < 10) {
+    fab.style.display = 'none';
+    return;
+  }
+  const msg = encodeURIComponent(SITE.support?.message || 'Olá! Preciso de suporte.');
+  fab.href = `https://wa.me/${raw}?text=${msg}`;
+  fab.target = '_blank';
 }
 
 function render() {

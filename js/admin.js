@@ -1,208 +1,497 @@
 /*
- * admin.js
+ * admin.js (Parte 2)
  *
- * Este script implementa a área administrativa da Loja de Apps. Ele inclui
- * autenticação simples, gerenciamento de produtos (criação, edição e remoção),
- * importação/exportação de dados e visualização de vendas gravadas durante as
- * compras. Todos os dados são persistidos em localStorage para permitir um
- * comportamento offline. A estrutura foi desenhada para evoluir com back‑end
- * futuro sem alterar o core.
+ * Objetivo: operar a loja com 0 investimento (sem backend).
+ *
+ * - Login simples (localStorage)
+ * - Produtos (CRUD)
+ * - Pedidos (gerados no checkout)
+ * - Entregas (cofre local): gera código e libera Android/iOS/Web no deliver.html
+ * - Export/Import (backup) de tudo
  */
 
-document.addEventListener('DOMContentLoaded', () => {
-  setupAdmin();
-});
+document.addEventListener('DOMContentLoaded', () => bootAdmin());
 
-// Chave de senha padrão. Se o usuário nunca definiu uma senha, usa 'admin'.
 const DEFAULT_PASSWORD = 'admin';
 
-// Elementos da página
+// ====== Elements ======
 const loginSection = document.getElementById('loginSection');
 const adminSection = document.getElementById('adminSection');
 const loginForm = document.getElementById('loginForm');
 const logoutBtn = document.getElementById('logoutBtn');
+
 const productsListDiv = document.getElementById('productsList');
+const ordersListDiv = document.getElementById('ordersList');
+const deliveriesListDiv = document.getElementById('deliveriesList');
 const salesUl = document.getElementById('salesUl');
+
 const addProductBtn = document.getElementById('addProductBtn');
 const exportBtn = document.getElementById('exportDataBtn');
+const exportBackupBtn = document.getElementById('exportBackupBtn');
 const importBtn = document.getElementById('importDataBtn');
 const importFileInput = document.getElementById('importFileInput');
+
+const addDeliveryBtn = document.getElementById('addDeliveryBtn');
+const clearDeliveriesBtn = document.getElementById('clearDeliveriesBtn');
+
 const productModal = document.getElementById('productModal');
 const closeModal = document.getElementById('closeModal');
 const productForm = document.getElementById('productForm');
 const modalTitle = document.getElementById('modalTitle');
 const cancelBtn = document.getElementById('cancelBtn');
 
-/**
- * Inicializa a área administrativa verificando o status de login.
- */
-function setupAdmin() {
-  const loggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-  if (loggedIn) {
-    showAdminSection();
-  } else {
-    showLoginSection();
-  }
-  // Eventos
-  loginForm.addEventListener('submit', handleLogin);
-  logoutBtn.addEventListener('click', handleLogout);
-  addProductBtn.addEventListener('click', () => openProductModal());
-  exportBtn.addEventListener('click', exportData);
-  importBtn.addEventListener('click', () => importFileInput.click());
-  importFileInput.addEventListener('change', handleImport);
-  productForm.addEventListener('submit', saveProduct);
-  cancelBtn.addEventListener('click', closeProductModal);
-  document.getElementById('closeModal').addEventListener('click', closeProductModal);
+const deliveryModal = document.getElementById('deliveryModal');
+const closeDeliveryModal = document.getElementById('closeDeliveryModal');
+const cancelDeliveryBtn = document.getElementById('cancelDeliveryBtn');
+const deliveryForm = document.getElementById('deliveryForm');
+
+// ====== Storage keys ======
+const K_PRODUCTS = 'products';
+const K_ORDERS = 'orders';
+const K_DELIVERIES = 'deliveries';
+const K_SALES = 'sales';
+const K_ADMIN_LOGGED = 'adminLoggedIn';
+const K_ADMIN_PASS = 'adminPassword';
+
+function bootAdmin() {
+  wireTabs();
+  wireCoreEvents();
+
+  const loggedIn = localStorage.getItem(K_ADMIN_LOGGED) === 'true';
+  loggedIn ? showAdmin() : showLogin();
 }
 
-/**
- * Mostra a tela de login.
- */
-function showLoginSection() {
-  loginSection.classList.remove('hidden');
-  adminSection.classList.add('hidden');
-  logoutBtn.classList.add('hidden');
+function wireCoreEvents() {
+  loginForm?.addEventListener('submit', handleLogin);
+  logoutBtn?.addEventListener('click', handleLogout);
+
+  addProductBtn?.addEventListener('click', () => openProductModal());
+  exportBtn?.addEventListener('click', exportManifest);
+  exportBackupBtn?.addEventListener('click', exportAll);
+  importBtn?.addEventListener('click', () => importFileInput?.click());
+  importFileInput?.addEventListener('change', handleImport);
+
+  productForm?.addEventListener('submit', saveProduct);
+  cancelBtn?.addEventListener('click', closeProductModal);
+  closeModal?.addEventListener('click', closeProductModal);
+
+  addDeliveryBtn?.addEventListener('click', () => openDeliveryModal());
+  clearDeliveriesBtn?.addEventListener('click', clearDeliveries);
+  deliveryForm?.addEventListener('submit', saveDeliveryManual);
+  cancelDeliveryBtn?.addEventListener('click', closeDeliveryModalFn);
+  closeDeliveryModal?.addEventListener('click', closeDeliveryModalFn);
 }
 
-/**
- * Mostra a tela de administração.
- */
-function showAdminSection() {
-  loginSection.classList.add('hidden');
-  adminSection.classList.remove('hidden');
-  logoutBtn.classList.remove('hidden');
-  // Se não houver produtos no localStorage, carregar do manifesto inicial
-  initializeProducts().then(() => {
-    renderProducts();
-    renderSales();
+function wireTabs() {
+  const btns = Array.from(document.querySelectorAll('.segmented-btn'));
+  btns.forEach((b) =>
+    b.addEventListener('click', () => {
+      btns.forEach((x) => x.classList.remove('is-active'));
+      b.classList.add('is-active');
+      const tab = b.getAttribute('data-tab');
+      showTab(tab || 'products');
+    })
+  );
+}
+
+function showTab(tab) {
+  const panels = ['products', 'orders', 'deliveries', 'sales'];
+  panels.forEach((p) => {
+    const el = document.getElementById('tab-' + p);
+    if (!el) return;
+    if (p === tab) el.classList.remove('hidden');
+    else el.classList.add('hidden');
   });
 }
 
-/**
- * Lida com o login. Verifica se a senha digitada corresponde à senha armazenada.
- * A senha é armazenada em localStorage sob a chave 'adminPassword'. Caso não
- * exista, a senha padrão 'admin' é utilizada. Para aumentar a segurança,
- * recomenda‑se alterar a senha na primeira utilização.
- * @param {Event} e
- */
+function showLogin() {
+  loginSection?.classList.remove('hidden');
+  adminSection?.classList.add('hidden');
+  logoutBtn?.classList.add('hidden');
+}
+
+async function showAdmin() {
+  loginSection?.classList.add('hidden');
+  adminSection?.classList.remove('hidden');
+  logoutBtn?.classList.remove('hidden');
+
+  await initializeProductsFromManifest();
+  renderAll();
+}
+
 function handleLogin(e) {
   e.preventDefault();
-  const inputPass = document.getElementById('password').value;
-  const storedPass = localStorage.getItem('adminPassword') || DEFAULT_PASSWORD;
+  const inputPass = (document.getElementById('password')?.value || '').trim();
+  const storedPass = localStorage.getItem(K_ADMIN_PASS) || DEFAULT_PASSWORD;
   if (inputPass === storedPass) {
-    localStorage.setItem('adminLoggedIn', 'true');
-    showAdminSection();
+    localStorage.setItem(K_ADMIN_LOGGED, 'true');
+    showAdmin();
   } else {
     alert('Senha incorreta.');
   }
-  loginForm.reset();
+  loginForm?.reset();
 }
 
-/**
- * Sai da sessão de administração.
- */
 function handleLogout() {
-  localStorage.setItem('adminLoggedIn', 'false');
-  showLoginSection();
+  localStorage.setItem(K_ADMIN_LOGGED, 'false');
+  showLogin();
 }
 
-/**
- * Obtém a lista de produtos do localStorage. Caso não exista, tenta carregar
- * do manifesto original. Esta função garante que a lista de produtos esteja
- * disponível para edição e manipulação.
- * @returns {Array}
- */
+// ====== Products ======
 function getProducts() {
-  const localData = localStorage.getItem('products');
-  if (localData) {
-    try {
-      return JSON.parse(localData);
-    } catch {
-      return [];
-    }
-  }
-  // Se não houver dados locais, retorne vazio; a função initializeProducts
-  // carregará dados do manifesto.
-  return [];
+  return safeJson(localStorage.getItem(K_PRODUCTS), []);
 }
 
-/**
- * Carrega o manifesto inicial para o localStorage se ainda não houver produtos.
- * Isso permite que a área administrativa comece com os dados existentes.
- */
-async function initializeProducts() {
-  const localData = localStorage.getItem('products');
-  if (localData) return;
+function setProducts(products) {
+  localStorage.setItem(K_PRODUCTS, JSON.stringify(products || []));
+}
+
+async function initializeProductsFromManifest() {
+  if (localStorage.getItem(K_PRODUCTS)) return;
   try {
     const resp = await fetch('content/manifest.json');
-    const manifest = await resp.json();
-    const products = manifest.products || [];
-    setProducts(products);
+    const data = await resp.json();
+    setProducts(Array.isArray(data.products) ? data.products : []);
   } catch (err) {
-    console.warn('Não foi possível carregar manifest.json para o admin:', err);
+    console.warn('manifest.json não carregou no admin:', err);
   }
 }
 
-/**
- * Salva a lista de produtos no localStorage.
- * @param {Array} products
- */
-function setProducts(products) {
-  localStorage.setItem('products', JSON.stringify(products));
+function openProductModal(product = null, index = null) {
+  productModal?.classList.remove('hidden');
+
+  const idField = document.getElementById('productId');
+  const name = document.getElementById('productName');
+  const desc = document.getElementById('productDescription');
+  const price = document.getElementById('productPrice');
+  const android = document.getElementById('productAndroid');
+  const ios = document.getElementById('productIOS');
+  const web = document.getElementById('productWeb');
+  const pay = document.getElementById('productPayLink');
+
+  if (product) {
+    modalTitle.textContent = 'Editar App';
+    if (idField) idField.value = String(index);
+    if (name) name.value = product.name || '';
+    if (desc) desc.value = product.description || '';
+    if (price) price.value = product.price ?? '';
+    if (android) android.value = product.android_url || '';
+    if (ios) ios.value = product.ios_link || '';
+    if (web) web.value = product.web_link || '';
+    if (pay) pay.value = product.payLink || product.pay_link || '';
+  } else {
+    modalTitle.textContent = 'Novo App';
+    if (idField) idField.value = '';
+    productForm?.reset();
+  }
 }
 
-/**
- * Renderiza a lista de produtos na área administrativa.
- */
-function renderProducts() {
+function closeProductModal() {
+  productModal?.classList.add('hidden');
+}
+
+async function saveProduct(e) {
+  e.preventDefault();
+
   const products = getProducts();
-  productsListDiv.innerHTML = '<h3>Apps Disponíveis</h3>';
-  if (products.length === 0) {
-    const p = document.createElement('p');
-    p.textContent = 'Nenhum app cadastrado.';
-    productsListDiv.appendChild(p);
+  const index = (document.getElementById('productId')?.value || '').trim();
+
+  const product = {
+    id: makeId('app'),
+    name: (document.getElementById('productName')?.value || '').trim(),
+    description: (document.getElementById('productDescription')?.value || '').trim(),
+    price: Number(document.getElementById('productPrice')?.value || 0),
+    android_url: (document.getElementById('productAndroid')?.value || '').trim(),
+    ios_link: (document.getElementById('productIOS')?.value || '').trim(),
+    web_link: (document.getElementById('productWeb')?.value || '').trim(),
+    payLink: (document.getElementById('productPayLink')?.value || '').trim(),
+    image: 'assets/default-app.png'
+  };
+
+  // imagem (opcional) -> data URI (sem custo)
+  const imageInput = document.getElementById('productImage');
+  const file = imageInput?.files?.[0];
+  if (file) {
+    product.image = await fileToDataUrl(file);
+  } else if (index !== '' && products[Number(index)]?.image) {
+    product.image = products[Number(index)].image;
+  }
+
+  if (index !== '') {
+    // update
+    product.id = products[Number(index)]?.id || product.id;
+    products[Number(index)] = product;
+  } else {
+    products.unshift(product);
+  }
+
+  setProducts(products);
+  closeProductModal();
+  renderProducts();
+}
+
+function removeProduct(idx) {
+  if (!confirm('Deseja remover este app?')) return;
+  const products = getProducts();
+  products.splice(idx, 1);
+  setProducts(products);
+  renderProducts();
+}
+
+function renderProducts() {
+  if (!productsListDiv) return;
+  const products = getProducts();
+  productsListDiv.innerHTML = '<h3>Produtos</h3>';
+
+  if (!products.length) {
+    productsListDiv.innerHTML += '<p>Nenhum produto cadastrado.</p>';
     return;
   }
-  products.forEach((product, index) => {
-    const li = document.createElement('li');
-    li.className = 'product-item';
-    const spanName = document.createElement('span');
-    spanName.textContent = `${product.name} – R$ ${Number(product.price || 0).toFixed(2)}`;
-    const actions = document.createElement('div');
-    actions.style.display = 'flex';
-    actions.style.gap = '8px';
-    // Editar
-    const editBtn = document.createElement('button');
-    editBtn.className = 'button secondary';
-    editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
-    editBtn.title = 'Editar';
-    editBtn.onclick = () => openProductModal(product, index);
-    actions.appendChild(editBtn);
-    // Remover
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'button secondary';
-    deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
-    deleteBtn.title = 'Remover';
-    deleteBtn.onclick = () => removeProduct(index);
-    actions.appendChild(deleteBtn);
-    li.appendChild(spanName);
-    li.appendChild(actions);
-    productsListDiv.appendChild(li);
+
+  products.forEach((p, idx) => {
+    const el = document.createElement('div');
+    el.className = 'product-item';
+    el.innerHTML = `
+      <div style="display:flex; align-items:center; gap:12px;">
+        <img src="${escapeAttr(p.image || 'assets/default-app.png')}" alt="" style="width:42px;height:42px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,.14);" />
+        <div>
+          <div style="font-weight:800">${escapeHtml(p.name || 'Produto')}</div>
+          <div style="opacity:.85; font-size:12px">R$ ${Number(p.price || 0).toFixed(2)} • ${escapeHtml(p.android_url ? 'Android' : '—')} ${p.ios_link ? '• iOS' : ''} ${p.web_link ? '• Web' : ''}</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="button secondary" title="Editar"><i class="fa-solid fa-pen"></i></button>
+        <button class="button secondary" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    `;
+    const [btnEdit, btnDel] = el.querySelectorAll('button');
+    btnEdit?.addEventListener('click', () => openProductModal(p, idx));
+    btnDel?.addEventListener('click', () => removeProduct(idx));
+    productsListDiv.appendChild(el);
   });
 }
 
-/**
- * Renderiza a lista de vendas gravadas no localStorage.
- */
+// ====== Orders (from checkout) ======
+function getOrders() {
+  return safeJson(localStorage.getItem(K_ORDERS), []);
+}
+
+function setOrders(orders) {
+  localStorage.setItem(K_ORDERS, JSON.stringify(orders || []));
+}
+
+function renderOrders() {
+  if (!ordersListDiv) return;
+  const orders = getOrders();
+  ordersListDiv.innerHTML = '';
+
+  if (!orders.length) {
+    ordersListDiv.innerHTML = '<p>Nenhum pedido ainda. (O checkout cria pedidos localmente.)</p>';
+    return;
+  }
+
+  const products = getProducts();
+
+  orders.forEach((o, idx) => {
+    const p = products.find((x) => x.id === o.productId);
+    const createdAt = o.createdAt ? new Date(o.createdAt).toLocaleString() : '';
+    const status = o.status || 'unknown';
+    const delivered = status === 'delivered';
+    const pill = delivered ? 'Entregue' : status === 'paid_unverified' ? 'Aguardando confirmação' : status;
+
+    const el = document.createElement('div');
+    el.className = 'product-item';
+    el.innerHTML = `
+      <div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <strong>${escapeHtml(o.productName || p?.name || 'Produto')}</strong>
+          <span class="pill"><i class="fa-solid fa-circle-info"></i> ${escapeHtml(pill)}</span>
+        </div>
+        <div style="opacity:.86; font-size:12px; margin-top:6px;">
+          Código de compra: <strong>${escapeHtml(o.purchaseCode || '—')}</strong> • Pedido: ${escapeHtml(o.orderId || '—')} • ${escapeHtml(createdAt)}
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="button primary" ${delivered ? 'disabled' : ''} title="Confirmar e liberar entrega">
+          <i class="fa-solid fa-key"></i>
+        </button>
+        <button class="button secondary" title="Copiar código">
+          <i class="fa-regular fa-copy"></i>
+        </button>
+        <button class="button secondary" title="Excluir pedido">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+    `;
+
+    const buttons = el.querySelectorAll('button');
+    const btnDeliver = buttons[0];
+    const btnCopy = buttons[1];
+    const btnDelete = buttons[2];
+
+    btnDeliver?.addEventListener('click', () => confirmAndDeliver(o, idx));
+    btnCopy?.addEventListener('click', () => copyText(o.purchaseCode || ''));
+    btnDelete?.addEventListener('click', () => deleteOrder(idx));
+
+    ordersListDiv.appendChild(el);
+  });
+}
+
+function deleteOrder(idx) {
+  if (!confirm('Excluir este pedido?')) return;
+  const orders = getOrders();
+  orders.splice(idx, 1);
+  setOrders(orders);
+  renderOrders();
+}
+
+function confirmAndDeliver(order, idx) {
+  const products = getProducts();
+  const p = products.find((x) => x.id === order.productId) || {};
+
+  const ok = confirm(
+    `CONFIRMAR PAGAMENTO?\n\nProduto: ${order.productName || p.name || '—'}\nCódigo de compra: ${order.purchaseCode || '—'}\n\nSe você confirmar, vou gerar um CÓDIGO DE ENTREGA para enviar ao cliente.`
+  );
+  if (!ok) return;
+
+  const deliveryCode = makeId('DL');
+  const payload = {
+    productId: order.productId,
+    productName: order.productName || p.name,
+    android_url: p.android_url || '',
+    ios_link: p.ios_link || '',
+    web_link: p.web_link || '',
+    note: `Entrega do produto: ${order.productName || p.name || ''}`
+  };
+
+  const vault = getDeliveries();
+  vault[deliveryCode] = payload;
+  setDeliveries(vault);
+
+  // update order
+  const orders = getOrders();
+  orders[idx] = {
+    ...orders[idx],
+    status: 'delivered',
+    deliveryCode,
+    deliveredAt: new Date().toISOString()
+  };
+  setOrders(orders);
+
+  // UX: mostra código pronto
+  alert(`Entrega liberada!\n\nEnvie este CÓDIGO DE ENTREGA ao cliente:\n\n${deliveryCode}\n\nEle vai usar em deliver.html`);
+  copyText(deliveryCode);
+
+  renderOrders();
+  renderDeliveries();
+}
+
+// ====== Deliveries vault ======
+function getDeliveries() {
+  return safeJson(localStorage.getItem(K_DELIVERIES), {});
+}
+
+function setDeliveries(vault) {
+  localStorage.setItem(K_DELIVERIES, JSON.stringify(vault || {}));
+}
+
+function clearDeliveries() {
+  if (!confirm('Limpar TODO o cofre de entregas?')) return;
+  setDeliveries({});
+  renderDeliveries();
+}
+
+function openDeliveryModal() {
+  deliveryModal?.classList.remove('hidden');
+  deliveryForm?.reset();
+}
+
+function closeDeliveryModalFn() {
+  deliveryModal?.classList.add('hidden');
+}
+
+function saveDeliveryManual(e) {
+  e.preventDefault();
+  const codeRaw = (document.getElementById('deliveryCodeInput')?.value || '').trim().toUpperCase();
+  const code = codeRaw || makeId('DL');
+
+  const payload = {
+    android_url: (document.getElementById('deliveryAndroid')?.value || '').trim(),
+    ios_link: (document.getElementById('deliveryIOS')?.value || '').trim(),
+    web_link: (document.getElementById('deliveryWeb')?.value || '').trim(),
+    note: (document.getElementById('deliveryNote')?.value || '').trim()
+  };
+
+  const vault = getDeliveries();
+  vault[code] = payload;
+  setDeliveries(vault);
+
+  closeDeliveryModalFn();
+  renderDeliveries();
+  alert(`Entrega salva!\n\nCódigo: ${code}`);
+  copyText(code);
+}
+
+function renderDeliveries() {
+  if (!deliveriesListDiv) return;
+  const vault = getDeliveries();
+  const codes = Object.keys(vault);
+
+  deliveriesListDiv.innerHTML = '';
+  if (!codes.length) {
+    deliveriesListDiv.innerHTML = '<p>Nenhuma entrega liberada ainda.</p>';
+    return;
+  }
+
+  codes.sort((a, b) => (a < b ? 1 : -1));
+
+  codes.forEach((code) => {
+    const p = vault[code] || {};
+    const el = document.createElement('div');
+    el.className = 'product-item';
+    el.innerHTML = `
+      <div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <strong>${escapeHtml(code)}</strong>
+          <span class="pill"><i class="fa-solid fa-lock-open"></i> Ativo</span>
+        </div>
+        <div style="opacity:.86; font-size:12px; margin-top:6px;">
+          ${p.android_url ? 'Android' : '—'} ${p.ios_link ? '• iOS' : ''} ${p.web_link ? '• Web' : ''}
+        </div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="button secondary" title="Copiar código"><i class="fa-regular fa-copy"></i></button>
+        <button class="button secondary" title="Excluir entrega"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    `;
+    const btns = el.querySelectorAll('button');
+    btns[0]?.addEventListener('click', () => copyText(code));
+    btns[1]?.addEventListener('click', () => deleteDelivery(code));
+    deliveriesListDiv.appendChild(el);
+  });
+}
+
+function deleteDelivery(code) {
+  if (!confirm(`Excluir entrega ${code}?`)) return;
+  const vault = getDeliveries();
+  delete vault[code];
+  setDeliveries(vault);
+  renderDeliveries();
+}
+
+// ====== Sales (registro local do botão "Comprar" no catálogo) ======
 function renderSales() {
-  const sales = JSON.parse(localStorage.getItem('sales') || '[]');
+  if (!salesUl) return;
+  const sales = safeJson(localStorage.getItem(K_SALES), []);
   salesUl.innerHTML = '';
-  if (sales.length === 0) {
+
+  if (!sales.length) {
     const li = document.createElement('li');
     li.textContent = 'Nenhuma venda registrada.';
     salesUl.appendChild(li);
     return;
   }
+
   sales.forEach((sale) => {
     const li = document.createElement('li');
     const date = new Date(sale.date);
@@ -211,142 +500,123 @@ function renderSales() {
   });
 }
 
-/**
- * Abre o modal de edição/criação de produto.
- * @param {Object} product
- * @param {number} index
- */
-function openProductModal(product = null, index = null) {
-  productModal.classList.remove('hidden');
-  if (product) {
-    modalTitle.textContent = 'Editar App';
-    document.getElementById('productId').value = index;
-    document.getElementById('productName').value = product.name || '';
-    document.getElementById('productDescription').value = product.description || '';
-    document.getElementById('productPrice').value = product.price || '';
-    document.getElementById('productAndroid').value = product.android_url || '';
-    document.getElementById('productIOS').value = product.ios_link || '';
-  } else {
-    modalTitle.textContent = 'Novo App';
-    document.getElementById('productId').value = '';
-    productForm.reset();
-  }
-}
-
-/**
- * Fecha o modal de produto.
- */
-function closeProductModal() {
-  productModal.classList.add('hidden');
-}
-
-/**
- * Remove um produto pelo índice.
- * @param {number} index
- */
-function removeProduct(index) {
-  if (!confirm('Deseja remover este app?')) return;
-  const products = getProducts();
-  products.splice(index, 1);
-  setProducts(products);
-  renderProducts();
-}
-
-/**
- * Lida com a submissão do formulário de produto. Se houver um índice
- * (productId), atualiza o produto existente; caso contrário, adiciona um
- * novo produto. Imagens são convertidas para Data URI para armazenamento no
- * localStorage. O link de pagamento será configurado manualmente.
- * @param {Event} e
- */
-function saveProduct(e) {
-  e.preventDefault();
-  const index = document.getElementById('productId').value;
-  const name = document.getElementById('productName').value;
-  const description = document.getElementById('productDescription').value;
-  const price = document.getElementById('productPrice').value;
-  const androidUrl = document.getElementById('productAndroid').value;
-  const iosLink = document.getElementById('productIOS').value;
-  const imageFile = document.getElementById('productImage').files[0];
-
-  const processAndSave = (imageDataUrl) => {
-    const products = getProducts();
-    const productObj = {
-      id: name.toLowerCase().replace(/\s+/g, '_'),
-      name,
-      description,
-      price,
-      android_url: androidUrl,
-      ios_link: iosLink,
-      image: imageDataUrl || (products[index] ? products[index].image : ''),
-      // O campo payLink deve ser ajustado manualmente através de exportação
-      payLink: products[index] ? products[index].payLink : '',
-    };
-    if (index !== '') {
-      products[index] = productObj;
-    } else {
-      products.push(productObj);
-    }
-    setProducts(products);
-    renderProducts();
-    closeProductModal();
+// ====== Export / Import ======
+function exportAll() {
+  const payload = {
+    version: '2.0',
+    exportedAt: new Date().toISOString(),
+    products: getProducts(),
+    orders: getOrders(),
+    deliveries: getDeliveries(),
+    sales: safeJson(localStorage.getItem(K_SALES), [])
   };
 
-  if (imageFile) {
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      processAndSave(evt.target.result);
-    };
-    reader.readAsDataURL(imageFile);
-  } else {
-    processAndSave(null);
-  }
-}
-
-/**
- * Exporta os produtos como arquivo JSON para download. O arquivo gerado
- * contém os produtos armazenados no localStorage e pode ser utilizado para
- * atualizar o manifesto ou servir como backup.
- */
-function exportData() {
-  const products = getProducts();
-  const data = { products };
-  const json = JSON.stringify(data, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'products-export.json';
+  a.download = `appvault-backup-${Date.now()}.json`;
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
+  a.remove();
   URL.revokeObjectURL(url);
 }
 
-/**
- * Lida com a importação de um arquivo JSON selecionado pelo usuário.
- * Os dados importados substituem os produtos atuais.
- * @param {Event} e
- */
+// Exporta um arquivo no formato de manifesto (para colocar em /content/manifest.json)
+function exportManifest() {
+  const payload = {
+    version: '1.0',
+    description: 'Manifesto exportado pelo Admin (produtos).',
+    products: getProducts(),
+    dlcs: []
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `manifest-${Date.now()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 function handleImport(e) {
-  const file = e.target.files[0];
+  const file = e.target.files?.[0];
   if (!file) return;
+
   const reader = new FileReader();
-  reader.onload = (evt) => {
+  reader.onload = () => {
     try {
-      const data = JSON.parse(evt.target.result);
-      if (data.products && Array.isArray(data.products)) {
-        setProducts(data.products);
-        renderProducts();
-        alert('Dados importados com sucesso.');
-      } else {
-        alert('Arquivo inválido.');
-      }
+      const data = JSON.parse(reader.result);
+      if (Array.isArray(data.products)) setProducts(data.products);
+      if (Array.isArray(data.orders)) setOrders(data.orders);
+      if (data.deliveries && typeof data.deliveries === 'object') setDeliveries(data.deliveries);
+      if (Array.isArray(data.sales)) localStorage.setItem(K_SALES, JSON.stringify(data.sales));
+
+      alert('Importação concluída!');
+      renderAll();
     } catch (err) {
-      alert('Erro ao importar arquivo: ' + err.message);
+      alert('Arquivo inválido.');
+      console.error(err);
     }
   };
   reader.readAsText(file);
-  // Limpar input para permitir importar novamente o mesmo arquivo se necessário
-  importFileInput.value = '';
+  e.target.value = '';
+}
+
+// ====== Render all ======
+function renderAll() {
+  renderProducts();
+  renderOrders();
+  renderDeliveries();
+  renderSales();
+}
+
+// ====== Helpers ======
+function safeJson(raw, fallback) {
+  try {
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function makeId(prefix) {
+  const n = Math.floor(Math.random() * 0xffffff);
+  return `${prefix}-${n.toString(16).toUpperCase().padStart(6, '0')}`;
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function copyText(text) {
+  const val = (text || '').trim();
+  if (!val) return;
+  try {
+    await navigator.clipboard.writeText(val);
+  } catch {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = val;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+  }
+}
+
+function escapeHtml(str) {
+  return (str || '').toString().replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/'/g, '&#39;');
 }

@@ -1,6 +1,10 @@
 {
   "version": "1.0",
   "description": "Manifesto inicial com os aplicativos disponíveis.",
+  "support": {
+    "whatsapp": "5500000000000",
+    "message": "Olá! Preciso de ajuda com um app da AppVault."
+  },
   "products": [
     {
       "id": "demo_app",
@@ -16,6 +20,8 @@
       ],
       "tags": ["utilitários", "premium", "android"],
       "category": "Destaque",
+      "rating": 4.8,
+      "reviewsCount": 124,
       "version": "1.0.0",
       "updatedAt": "2026-01-26",
       "price": 9.99,
@@ -24,6 +30,13 @@
       "web_link": "https://vercel.com",
       "image": "assets/default-app.png",
       "screenshots": ["assets/hero.png"],
+      "faq": [
+        {"q": "Como recebo o app depois de pagar?", "a": "Você recebe um código de entrega e desbloqueia os links em 'Já comprei'."},
+        {"q": "Posso instalar em mais de um celular?", "a": "No MVP, sim. No futuro podemos adicionar licenças por dispositivo."}
+      ],
+      "changelog": [
+        {"v": "1.0.0", "date": "2026-01-26", "items": ["Primeira versão", "Entrega por código", "UI premium"]}
+      ],
       "payLink": "https://www.ton.com.br/linkdeexemplo"
     }
   ],

@@ -51,12 +51,65 @@
           <button id="importDataBtn" class="button secondary">
             <i class="fa-solid fa-upload"></i> Importar Dados
           </button>
+          <button id="exportBackupBtn" class="button secondary">
+            <i class="fa-solid fa-box-archive"></i> Backup completo
+          </button>
         </div>
+
+        <div class="segmented" role="tablist" aria-label="Seções do admin">
+          <button class="segmented-btn is-active" data-tab="products" type="button">
+            <i class="fa-solid fa-box"></i> Produtos
+          </button>
+          <button class="segmented-btn" data-tab="orders" type="button">
+            <i class="fa-solid fa-bag-shopping"></i> Pedidos
+          </button>
+          <button class="segmented-btn" data-tab="deliveries" type="button">
+            <i class="fa-solid fa-key"></i> Entregas
+          </button>
+          <button class="segmented-btn" data-tab="sales" type="button">
+            <i class="fa-solid fa-chart-line"></i> Vendas
+          </button>
+        </div>
+
         <input type="file" id="importFileInput" class="hidden" accept="application/json" />
-        <div id="productsList" class="admin-list"></div>
-        <div id="salesList" class="admin-list">
-          <h3>Vendas</h3>
-          <ul id="salesUl"></ul>
+
+        <div id="tab-products" class="tab-panel">
+          <div id="productsList" class="admin-list"></div>
+        </div>
+
+        <div id="tab-orders" class="tab-panel hidden">
+          <div class="panel-head">
+            <h3>Pedidos (checkout)</h3>
+            <p class="muted">
+              Aqui aparecem os códigos que o cliente gerou após pagar. Você confirma o pagamento e libera a entrega.
+            </p>
+          </div>
+          <div id="ordersList" class="admin-list"></div>
+        </div>
+
+        <div id="tab-deliveries" class="tab-panel hidden">
+          <div class="panel-head">
+            <h3>Cofre de entregas</h3>
+            <p class="muted">
+              Códigos liberados que destravam Android/iOS/Web na página <code>deliver.html</code>.
+            </p>
+          </div>
+          <div class="admin-actions" style="margin-top: 12px">
+            <button id="addDeliveryBtn" class="button secondary" type="button">
+              <i class="fa-solid fa-plus"></i> Criar entrega manual
+            </button>
+            <button id="clearDeliveriesBtn" class="button secondary" type="button">
+              <i class="fa-solid fa-trash"></i> Limpar cofre
+            </button>
+          </div>
+          <div id="deliveriesList" class="admin-list"></div>
+        </div>
+
+        <div id="tab-sales" class="tab-panel hidden">
+          <div id="salesList" class="admin-list">
+            <h3>Vendas (registro local)</h3>
+            <ul id="salesUl"></ul>
+          </div>
         </div>
       </section>
       <!-- Modal de produto -->
@@ -74,13 +127,46 @@
             <input type="number" id="productPrice" min="0" step="0.01" required />
             <label for="productAndroid">URL Android (.apk)</label>
             <input type="url" id="productAndroid" required />
+            <label for="productWeb">Link Web/PC (Vercel/GitHub)</label>
+            <input type="url" id="productWeb" placeholder="https://..." />
             <label for="productIOS">Link iOS (GitHub/Vercel)</label>
             <input type="url" id="productIOS" />
+            <label for="productPayLink">Link de Pagamento (Ton/PagBank/etc.)</label>
+            <input type="url" id="productPayLink" placeholder="https://..." />
             <label for="productImage">Imagem</label>
             <input type="file" id="productImage" accept="image/*" />
             <div class="modal-actions">
               <button type="submit" class="button primary">Salvar</button>
               <button type="button" id="cancelBtn" class="button secondary">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal de entrega manual -->
+      <div id="deliveryModal" class="modal hidden">
+        <div class="modal-content">
+          <span class="close" id="closeDeliveryModal">&times;</span>
+          <h2 id="deliveryModalTitle">Criar entrega</h2>
+          <form id="deliveryForm">
+            <label for="deliveryCodeInput">Código de entrega (opcional)</label>
+            <input type="text" id="deliveryCodeInput" placeholder="Deixe vazio para gerar automaticamente" />
+
+            <label for="deliveryAndroid">URL Android (APK)</label>
+            <input type="url" id="deliveryAndroid" placeholder="https://..." />
+
+            <label for="deliveryIOS">Link iOS</label>
+            <input type="url" id="deliveryIOS" placeholder="https://..." />
+
+            <label for="deliveryWeb">Link Web/PC</label>
+            <input type="url" id="deliveryWeb" placeholder="https://..." />
+
+            <label for="deliveryNote">Mensagem/observação</label>
+            <textarea id="deliveryNote" rows="3" placeholder="Ex: Obrigado pela compra!"></textarea>
+
+            <div class="modal-actions">
+              <button type="submit" class="button primary">Salvar entrega</button>
+              <button type="button" id="cancelDeliveryBtn" class="button secondary">Cancelar</button>
             </div>
           </form>
         </div>

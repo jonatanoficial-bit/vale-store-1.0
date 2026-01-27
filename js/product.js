@@ -22,7 +22,7 @@ async function boot() {
     return;
   }
 
-  const catalog = await loadCatalog();
+  const { products: catalog, site } = await loadCatalog();
   const product = catalog.find((p) => p.slug === slug) || catalog.find((p) => p.id === slug);
 
   if (skeleton) skeleton.remove();
@@ -34,7 +34,7 @@ async function boot() {
 
   document.title = `${product.name} • AppVault`;
 
-  if (container) container.innerHTML = renderProduct(product);
+  if (container) container.innerHTML = renderProduct(product, site);
 
   // Gallery thumbs
   document.querySelectorAll('[data-shot]').forEach((el) => {
@@ -54,6 +54,12 @@ function getParam(key) {
 async function loadCatalog() {
   const res = await fetch('content/manifest.json');
   const data = await res.json();
+  const site = {
+    support: {
+      whatsapp: (data.support?.whatsapp || '').toString(),
+      message: (data.support?.message || '').toString(),
+    },
+  };
   let products = Array.isArray(data.products) ? data.products : [];
 
   if (Array.isArray(data.dlcs)) {
@@ -68,7 +74,7 @@ async function loadCatalog() {
     }
   }
 
-  return products.map(normalizeProduct);
+  return { site, products: products.map(normalizeProduct) };
 }
 
 function normalizeProduct(p) {
@@ -90,6 +96,10 @@ function normalizeProduct(p) {
     features: Array.isArray(p.features) ? p.features : [],
     tags: Array.isArray(p.tags) ? p.tags : [],
     category: p.category || 'Geral',
+    rating: typeof p.rating === 'number' ? p.rating : Number(p.rating || 0),
+    reviewsCount: typeof p.reviewsCount === 'number' ? p.reviewsCount : Number(p.reviewsCount || 0),
+    faq: Array.isArray(p.faq) ? p.faq : [],
+    changelog: Array.isArray(p.changelog) ? p.changelog : [],
     price: typeof p.price === 'number' ? p.price : Number(p.price || 0),
     payLink: p.payLink || '',
     android_url: p.android_url || '',
@@ -112,7 +122,7 @@ function renderNotFound(msg) {
   `;
 }
 
-function renderProduct(p) {
+function renderProduct(p, site) {
   const shots = [p.image, ...(p.screenshots || [])].filter(Boolean).slice(0, 6);
   const priceLabel = p.price > 0 ? `R$ ${p.price.toFixed(2)}` : 'Grátis';
   const buyLabel = p.price > 0 ? 'Comprar' : 'Obter';
@@ -123,8 +133,42 @@ function renderProduct(p) {
     ${p.web_link ? '<span class="pill"><i class="fa-solid fa-desktop"></i> Web/PC</span>' : ''}
   `;
 
-  const features = (p.features || []).slice(0, 8).map((f) => `<li>${escapeHtml(f)}</li>`).join('');
+  const features = (p.features || []).slice(0, 10).map((f) => `<li>${escapeHtml(f)}</li>`).join('');
   const tags = (p.tags || []).slice(0, 8).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
+
+  const rating = p.rating ? `${p.rating.toFixed(1)}★` : '—';
+  const reviewsLabel = p.reviewsCount ? `${p.reviewsCount} avaliações` : 'Sem avaliações';
+
+  const faqHtml = (p.faq || []).slice(0, 8).map((it, idx) => {
+    const q = escapeHtml(it?.q || '');
+    const a = escapeHtml(it?.a || '');
+    return `
+      <details class="accordion" ${idx === 0 ? 'open' : ''}>
+        <summary><span>${q}</span><i class="fa-solid fa-chevron-down"></i></summary>
+        <div class="accordion-body"><p>${a}</p></div>
+      </details>
+    `;
+  }).join('');
+
+  const changeHtml = (p.changelog || []).slice(0, 8).map((c) => {
+    const v = escapeHtml(c?.v || '');
+    const date = escapeHtml(c?.date || '');
+    const items = Array.isArray(c?.items) ? c.items.map((x) => `<li>${escapeHtml(x)}</li>`).join('') : '';
+    return `
+      <div class="change">
+        <div class="change-head">
+          <strong>v${v}</strong>
+          ${date ? `<span>${date}</span>` : ''}
+        </div>
+        ${items ? `<ul>${items}</ul>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  const waRaw = (site?.support?.whatsapp || '').replace(/\D/g, '');
+  const waOk = waRaw && waRaw.length >= 10;
+  const waMsg = encodeURIComponent(site?.support?.message || `Olá! Tenho dúvidas sobre o app: ${p.name}`);
+  const waHref = waOk ? `https://wa.me/${waRaw}?text=${waMsg}` : '';
 
   return `
     <div class="product-hero">
@@ -153,6 +197,11 @@ function renderProduct(p) {
 
         <div class="product-price">
           <div class="price-big">${escapeHtml(priceLabel)}</div>
+          <div class="product-meta">
+            <span class="rating">${escapeHtml(rating)}</span>
+            <span class="dot"></span>
+            <span>${escapeHtml(reviewsLabel)}</span>
+          </div>
           <div class="product-meta">Versão ${escapeHtml(p.version)} ${p.updatedAt ? '• Atualizado: ' + escapeHtml(p.updatedAt) : ''}</div>
         </div>
 
@@ -162,6 +211,7 @@ function renderProduct(p) {
           <a class="btn btn-primary" href="checkout.html?slug=${encodeURIComponent(p.slug)}">
             <i class="fa-solid fa-bag-shopping"></i> ${buyLabel}
           </a>
+          ${waOk ? `<a class="btn btn-secondary" href="${waHref}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Suporte</a>` : ''}
           <a class="btn btn-ghost" href="index.html">
             <i class="fa-solid fa-grid-2"></i> Catálogo
           </a>
@@ -180,6 +230,23 @@ function renderProduct(p) {
       <article class="card">
         <h3 class="card-title">Destaques</h3>
         ${features ? `<ul class="feature-list">${features}</ul>` : '<p class="card-text">Sem lista de destaques.</p>'}
+      </article>
+
+      <article class="card">
+        <h3 class="card-title">Screenshots</h3>
+        <div class="gallery">
+          ${(shots || []).map((src) => `<img src="${escapeAttr(src)}" alt="" loading="lazy" />`).join('')}
+        </div>
+      </article>
+
+      <article class="card">
+        <h3 class="card-title">FAQ</h3>
+        ${faqHtml || '<p class="card-text">Sem perguntas cadastradas.</p>'}
+      </article>
+
+      <article class="card">
+        <h3 class="card-title">Changelog</h3>
+        ${changeHtml || '<p class="card-text">Sem histórico de versões.</p>'}
       </article>
 
       <article class="card">

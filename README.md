@@ -8,7 +8,7 @@ Este projeto é uma **loja de aplicativos mobile‑first** desenvolvida com HTML
 2. **Página de produto completa:** `product.html?slug=...` (descrição longa, destaques, galeria e CTAs).
 3. **Checkout MVP sem custo:** `checkout.html?slug=...` abre o link de pagamento e gera um **código de compra**.
 4. **Entrega por código (sem backend):** `deliver.html` desbloqueia Android/iOS/Web por um código liberado pelo vendedor.
-5. **Área Administrativa:** login simples com senha armazenada em `localStorage`, CRUD de produtos, importação/exportação de dados em JSON e visualização das vendas registradas.
+5. **Área Administrativa:** login simples com senha armazenada em `localStorage`, CRUD de produtos, importação/exportação de dados em JSON e painel de **Pedidos** (códigos do checkout) + **Entregas** (cofre local que libera links na página `deliver.html`).
 6. **Arquitetura expansível (DLC):** manifesto + DLCs em `/content/dlc*/`.
 7. **Design premium:** UI mobile‑first com gradientes sofisticados, botões com microinterações e tipografia elegante. A aparência é pensada para se assemelhar a um app de loja profissional.
 

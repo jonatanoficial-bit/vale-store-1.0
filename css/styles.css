@@ -745,6 +745,129 @@ a:hover {
   color: rgba(230, 240, 255, 0.9);
 }
 
+/* ===== Checkout (Parte 4) ===== */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 10px 0 14px;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 16px;
+  background: rgba(255,255,255,.04);
+  color: rgba(230,240,255,.82);
+  font-size: 13px;
+  user-select: none;
+}
+
+.step-dot {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.14);
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.step.is-active {
+  background: rgba(91,43,224,.18);
+  border-color: rgba(91,43,224,.38);
+  color: rgba(255,255,255,.95);
+}
+
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.mini-card {
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 16px;
+  background: rgba(255,255,255,.03);
+}
+
+.mini-title {
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini-text {
+  margin-top: 6px;
+  opacity: .86;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.coupon-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 14px;
+}
+
+.field label {
+  display: block;
+  font-size: 12px;
+  opacity: .8;
+  margin-bottom: 6px;
+}
+
+.field input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.18);
+  color: rgba(255,255,255,.95);
+}
+
+.price-breakdown {
+  margin-top: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(255,255,255,.03);
+}
+
+.price-breakdown .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 13px;
+  opacity: .92;
+}
+
+.price-breakdown .row.total {
+  border-top: 1px solid rgba(255,255,255,.1);
+  margin-top: 6px;
+  padding-top: 10px;
+  font-size: 15px;
+  opacity: 1;
+}
+
+@media (min-width: 720px) {
+  .checkout-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .pill.ok { border-color: rgba(79, 255, 176, 0.25); }
 .pill.warn { border-color: rgba(255, 199, 104, 0.25); }
 .pill.bad { border-color: rgba(255, 122, 122, 0.25); }

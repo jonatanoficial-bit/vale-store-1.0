@@ -23,6 +23,7 @@ const logoutBtn = document.getElementById('logoutBtn');
 const productsListDiv = document.getElementById('productsList');
 const ordersListDiv = document.getElementById('ordersList');
 const deliveriesListDiv = document.getElementById('deliveriesList');
+const couponsListDiv = document.getElementById('couponsList');
 const salesUl = document.getElementById('salesUl');
 
 const addProductBtn = document.getElementById('addProductBtn');
@@ -33,6 +34,10 @@ const importFileInput = document.getElementById('importFileInput');
 
 const addDeliveryBtn = document.getElementById('addDeliveryBtn');
 const clearDeliveriesBtn = document.getElementById('clearDeliveriesBtn');
+
+const addCouponBtn = document.getElementById('addCouponBtn');
+const clearCouponsBtn = document.getElementById('clearCouponsBtn');
+const exportManifestBtn = document.getElementById('exportManifestBtn');
 
 const productModal = document.getElementById('productModal');
 const closeModal = document.getElementById('closeModal');
@@ -45,10 +50,17 @@ const closeDeliveryModal = document.getElementById('closeDeliveryModal');
 const cancelDeliveryBtn = document.getElementById('cancelDeliveryBtn');
 const deliveryForm = document.getElementById('deliveryForm');
 
+const couponModal = document.getElementById('couponModal');
+const closeCouponModal = document.getElementById('closeCouponModal');
+const cancelCouponBtn = document.getElementById('cancelCouponBtn');
+const couponForm = document.getElementById('couponForm');
+const couponModalTitle = document.getElementById('couponModalTitle');
+
 // ====== Storage keys ======
 const K_PRODUCTS = 'products';
 const K_ORDERS = 'orders';
 const K_DELIVERIES = 'deliveries';
+const K_COUPONS = 'coupons';
 const K_SALES = 'sales';
 const K_ADMIN_LOGGED = 'adminLoggedIn';
 const K_ADMIN_PASS = 'adminPassword';
@@ -80,6 +92,14 @@ function wireCoreEvents() {
   deliveryForm?.addEventListener('submit', saveDeliveryManual);
   cancelDeliveryBtn?.addEventListener('click', closeDeliveryModalFn);
   closeDeliveryModal?.addEventListener('click', closeDeliveryModalFn);
+
+  // Cupons
+  addCouponBtn?.addEventListener('click', () => openCouponModal());
+  clearCouponsBtn?.addEventListener('click', clearCoupons);
+  exportManifestBtn?.addEventListener('click', exportManifest);
+  couponForm?.addEventListener('submit', saveCoupon);
+  cancelCouponBtn?.addEventListener('click', closeCouponModalFn);
+  closeCouponModal?.addEventListener('click', closeCouponModalFn);
 }
 
 function wireTabs() {
@@ -95,7 +115,7 @@ function wireTabs() {
 }
 
 function showTab(tab) {
-  const panels = ['products', 'orders', 'deliveries', 'sales'];
+  const panels = ['products', 'orders', 'deliveries', 'coupons', 'sales'];
   panels.forEach((p) => {
     const el = document.getElementById('tab-' + p);
     if (!el) return;
@@ -116,6 +136,7 @@ async function showAdmin() {
   logoutBtn?.classList.remove('hidden');
 
   await initializeProductsFromManifest();
+  await initializeCouponsFromManifest();
   renderAll();
 }
 
@@ -152,9 +173,142 @@ async function initializeProductsFromManifest() {
     const resp = await fetch('content/manifest.json');
     const data = await resp.json();
     setProducts(Array.isArray(data.products) ? data.products : []);
+    if (data.support) localStorage.setItem('support', JSON.stringify(data.support));
   } catch (err) {
     console.warn('manifest.json não carregou no admin:', err);
   }
+}
+
+// ====== Cupons ======
+function getCoupons() {
+  return safeJson(localStorage.getItem(K_COUPONS), []);
+}
+
+function setCoupons(coupons) {
+  localStorage.setItem(K_COUPONS, JSON.stringify(coupons || []));
+}
+
+async function initializeCouponsFromManifest() {
+  if (localStorage.getItem(K_COUPONS)) return;
+  try {
+    const resp = await fetch('content/manifest.json');
+    const data = await resp.json();
+    setCoupons(Array.isArray(data.coupons) ? data.coupons : []);
+  } catch (err) {
+    console.warn('coupons no manifest não carregaram:', err);
+  }
+}
+
+function openCouponModal(coupon = null, index = null) {
+  couponModal?.classList.remove('hidden');
+  if (couponModalTitle) couponModalTitle.textContent = coupon ? 'Editar cupom' : 'Novo cupom';
+
+  const idxField = document.getElementById('couponIndex');
+  const code = document.getElementById('couponCode');
+  const type = document.getElementById('couponType');
+  const value = document.getElementById('couponValue');
+  const expires = document.getElementById('couponExpires');
+  const active = document.getElementById('couponActive');
+
+  if (coupon) {
+    if (idxField) idxField.value = String(index);
+    if (code) code.value = String(coupon.code || '');
+    if (type) type.value = coupon.type === 'fixed' ? 'fixed' : 'percent';
+    if (value) value.value = coupon.value ?? '';
+    if (expires) expires.value = coupon.expiresAt || '';
+    if (active) active.checked = coupon.active !== false;
+  } else {
+    if (idxField) idxField.value = '';
+    couponForm?.reset();
+    if (active) active.checked = true;
+  }
+}
+
+function closeCouponModalFn() {
+  couponModal?.classList.add('hidden');
+}
+
+function saveCoupon(e) {
+  e.preventDefault();
+  const coupons = getCoupons();
+  const idx = (document.getElementById('couponIndex')?.value || '').trim();
+
+  const coupon = {
+    code: (document.getElementById('couponCode')?.value || '').trim().toUpperCase(),
+    type: (document.getElementById('couponType')?.value || 'percent').trim(),
+    value: Number(document.getElementById('couponValue')?.value || 0),
+    expiresAt: (document.getElementById('couponExpires')?.value || '').trim(),
+    active: !!document.getElementById('couponActive')?.checked
+  };
+
+  if (!coupon.code) {
+    alert('Informe um código.');
+    return;
+  }
+
+  if (idx !== '') coupons[Number(idx)] = coupon;
+  else coupons.unshift(coupon);
+
+  setCoupons(coupons);
+  closeCouponModalFn();
+  renderCoupons();
+}
+
+function clearCoupons() {
+  if (!confirm('Limpar TODOS os cupons?')) return;
+  setCoupons([]);
+  renderCoupons();
+}
+
+function renderCoupons() {
+  if (!couponsListDiv) return;
+  const coupons = getCoupons();
+  couponsListDiv.innerHTML = '';
+
+  if (!coupons.length) {
+    couponsListDiv.innerHTML = '<p>Nenhum cupom criado ainda.</p>';
+    return;
+  }
+
+  coupons.forEach((c, idx) => {
+    const el = document.createElement('div');
+    el.className = 'product-item';
+
+    const type = c.type === 'fixed' ? `R$ ${Number(c.value || 0).toFixed(2)}` : `${Number(c.value || 0).toFixed(0)}%`;
+    const active = c.active === false ? 'Inativo' : 'Ativo';
+    const exp = c.expiresAt ? `Até ${c.expiresAt}` : 'Sem validade';
+
+    el.innerHTML = `
+      <div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <strong>${escapeHtml(String(c.code || '').toUpperCase())}</strong>
+          <span class="pill"><i class="fa-solid fa-ticket"></i> ${escapeHtml(type)}</span>
+          <span class="pill"><i class="fa-solid fa-toggle-on"></i> ${escapeHtml(active)}</span>
+        </div>
+        <div style="opacity:.86; font-size:12px; margin-top:6px;">
+          ${escapeHtml(exp)}
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="button secondary" title="Editar"><i class="fa-solid fa-pen"></i></button>
+        <button class="button secondary" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+        <button class="button secondary" title="Copiar"><i class="fa-regular fa-copy"></i></button>
+      </div>
+    `;
+
+    const [btnEdit, btnDel, btnCopy] = el.querySelectorAll('button');
+    btnEdit?.addEventListener('click', () => openCouponModal(c, idx));
+    btnDel?.addEventListener('click', () => {
+      if (!confirm('Excluir este cupom?')) return;
+      const arr = getCoupons();
+      arr.splice(idx, 1);
+      setCoupons(arr);
+      renderCoupons();
+    });
+    btnCopy?.addEventListener('click', () => copyText(String(c.code || '')));
+
+    couponsListDiv.appendChild(el);
+  });
 }
 
 function openProductModal(product = null, index = null) {
@@ -348,6 +502,7 @@ function deleteOrder(idx) {
 function confirmAndDeliver(order, idx) {
   const products = getProducts();
   const p = products.find((x) => x.id === order.productId) || {};
+  const productSlug = (p.slug || p.id || '').toString().trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
 
   const ok = confirm(
     `CONFIRMAR PAGAMENTO?\n\nProduto: ${order.productName || p.name || '—'}\nCódigo de compra: ${order.purchaseCode || '—'}\n\nSe você confirmar, vou gerar um CÓDIGO DE ENTREGA para enviar ao cliente.`
@@ -357,6 +512,7 @@ function confirmAndDeliver(order, idx) {
   const deliveryCode = makeId('DL');
   const payload = {
     productId: order.productId,
+    productSlug,
     productName: order.productName || p.name,
     android_url: p.android_url || '',
     ios_link: p.ios_link || '',
@@ -508,6 +664,7 @@ function exportAll() {
     products: getProducts(),
     orders: getOrders(),
     deliveries: getDeliveries(),
+    coupons: getCoupons(),
     sales: safeJson(localStorage.getItem(K_SALES), [])
   };
 
@@ -526,7 +683,9 @@ function exportAll() {
 function exportManifest() {
   const payload = {
     version: '1.0',
-    description: 'Manifesto exportado pelo Admin (produtos).',
+    description: 'Manifesto exportado pelo Admin (produtos + cupons).',
+    support: safeJson(localStorage.getItem('support'), {}),
+    coupons: getCoupons(),
     products: getProducts(),
     dlcs: []
   };
@@ -553,6 +712,8 @@ function handleImport(e) {
       if (Array.isArray(data.products)) setProducts(data.products);
       if (Array.isArray(data.orders)) setOrders(data.orders);
       if (data.deliveries && typeof data.deliveries === 'object') setDeliveries(data.deliveries);
+      if (Array.isArray(data.coupons)) setCoupons(data.coupons);
+      if (data.support && typeof data.support === 'object') localStorage.setItem('support', JSON.stringify(data.support));
       if (Array.isArray(data.sales)) localStorage.setItem(K_SALES, JSON.stringify(data.sales));
 
       alert('Importação concluída!');
@@ -571,6 +732,7 @@ function renderAll() {
   renderProducts();
   renderOrders();
   renderDeliveries();
+  renderCoupons();
   renderSales();
 }
 
@@ -584,8 +746,26 @@ function safeJson(raw, fallback) {
 }
 
 function makeId(prefix) {
-  const n = Math.floor(Math.random() * 0xffffff);
-  return `${prefix}-${n.toString(16).toUpperCase().padStart(6, '0')}`;
+  // Token mais longo para reduzir adivinhação/colisão (ainda sem backend)
+  const rand = cryptoRandomHex(8);
+  const time = Date.now().toString(36).toUpperCase();
+  return `${prefix}-${time}-${rand}`;
+}
+
+function cryptoRandomHex(bytes) {
+  try {
+    const arr = new Uint8Array(bytes);
+    crypto.getRandomValues(arr);
+    return Array.from(arr)
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('')
+      .toUpperCase();
+  } catch {
+    // fallback
+    let out = '';
+    for (let i = 0; i < bytes; i++) out += Math.floor(Math.random() * 256).toString(16).padStart(2, '0');
+    return out.toUpperCase();
+  }
 }
 
 function fileToDataUrl(file) {

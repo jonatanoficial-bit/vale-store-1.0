@@ -21,14 +21,15 @@ async function boot() {
     return;
   }
 
-  const product = await findProductBySlug(slug);
+  const ctx = await loadCheckoutContext(slug);
+  const product = ctx.product;
   if (!product) {
     root.innerHTML = renderError('Produto não encontrado.');
     return;
   }
 
   document.title = `Checkout • ${product.name} • AppVault`;
-  root.innerHTML = renderCheckout(product);
+  root.innerHTML = renderCheckout(product, ctx.support);
 
   const btnPay = document.getElementById('btnPay');
   const btnIpaid = document.getElementById('btnIpaid');
@@ -46,15 +47,55 @@ async function boot() {
     });
   }
 
+  // Cupom
+  const couponInput = document.getElementById('couponCode');
+  const btnApplyCoupon = document.getElementById('btnApplyCoupon');
+  const priceBox = document.getElementById('priceBox');
+  let appliedCoupon = null;
+
+  const recalc = () => {
+    const breakdown = calcPrice(product.price, appliedCoupon);
+    if (priceBox) priceBox.innerHTML = renderPriceBreakdown(breakdown);
+  };
+  recalc();
+
+  if (btnApplyCoupon) {
+    btnApplyCoupon.addEventListener('click', () => {
+      const code = (couponInput?.value || '').trim().toUpperCase();
+      if (!code) {
+        alert('Digite um cupom.');
+        return;
+      }
+      const c = (ctx.coupons || []).find((x) => String(x.code || '').toUpperCase() === code && x.active !== false);
+      if (!c) {
+        alert('Cupom inválido ou expirado.');
+        return;
+      }
+      if (c.expiresAt) {
+        const exp = new Date(c.expiresAt + 'T23:59:59');
+        if (!isNaN(exp.getTime()) && exp.getTime() < Date.now()) {
+          alert('Cupom expirado.');
+          return;
+        }
+      }
+      appliedCoupon = normalizeCoupon(c);
+      recalc();
+      alert(`Cupom aplicado: ${appliedCoupon.code}`);
+    });
+  }
+
   if (btnIpaid) {
     btnIpaid.addEventListener('click', () => {
       const purchaseCode = makeCode('AV');
+      const breakdown = calcPrice(product.price, appliedCoupon);
       const order = {
         orderId: makeCode('ORD'),
         purchaseCode,
         productId: product.id,
         productName: product.name,
         price: product.price,
+        finalPrice: breakdown.total,
+        coupon: appliedCoupon ? { code: appliedCoupon.code, type: appliedCoupon.type, value: appliedCoupon.value } : null,
         createdAt: new Date().toISOString(),
         status: 'paid_unverified'
       };
@@ -85,7 +126,7 @@ function getParam(key) {
   return (url.searchParams.get(key) || '').trim();
 }
 
-async function findProductBySlug(slug) {
+async function loadCheckoutContext(slug) {
   const res = await fetch('content/manifest.json');
   const data = await res.json();
   let products = Array.isArray(data.products) ? data.products : [];
@@ -103,7 +144,12 @@ async function findProductBySlug(slug) {
   }
 
   const normalized = products.map(normalizeProduct);
-  return normalized.find((p) => p.slug === slug) || normalized.find((p) => p.id === slug);
+  const product = normalized.find((p) => p.slug === slug) || normalized.find((p) => p.id === slug) || null;
+  return {
+    product,
+    coupons: Array.isArray(data.coupons) ? data.coupons : safeJson(localStorage.getItem('coupons'), []),
+    support: data.support || {}
+  };
 }
 
 function normalizeProduct(p) {
@@ -125,12 +171,38 @@ function normalizeProduct(p) {
   };
 }
 
-function renderCheckout(p) {
+function normalizeCoupon(c) {
+  return {
+    code: String(c.code || '').trim().toUpperCase(),
+    type: c.type === 'fixed' ? 'fixed' : 'percent',
+    value: typeof c.value === 'number' ? c.value : Number(c.value || 0)
+  };
+}
+
+function calcPrice(price, coupon) {
+  const subtotal = Number(price || 0);
+  let discount = 0;
+  if (coupon && subtotal > 0) {
+    if (coupon.type === 'fixed') {
+      discount = Math.min(subtotal, Math.max(0, coupon.value));
+    } else {
+      discount = Math.min(subtotal, Math.max(0, subtotal * (coupon.value / 100)));
+    }
+  }
+  const total = Math.max(0, subtotal - discount);
+  return { subtotal, discount, total };
+}
+
+function renderCheckout(p, support) {
   const priceLabel = p.price > 0 ? `R$ ${p.price.toFixed(2)}` : 'Grátis';
   const hasPay = !!p.payLink;
   const buyHint = hasPay
     ? 'Clique em “Pagar agora” para abrir o link do pagamento.'
     : 'Este produto está sem link de pagamento. Configure no Admin.';
+
+  const wa = support?.whatsapp ? String(support.whatsapp).replace(/\D/g, '') : '';
+  const waMsg = support?.message ? encodeURIComponent(String(support.message)) : encodeURIComponent('Olá! Preciso de ajuda com uma compra.');
+  const waLink = wa ? `https://wa.me/${wa}?text=${waMsg}` : '';
 
   return `
     <section class="section-head">
@@ -139,6 +211,12 @@ function renderCheckout(p) {
         <p class="section-subtitle">${escapeHtml(buyHint)}</p>
       </div>
     </section>
+
+    <div class="steps">
+      <div class="step is-active"><span class="step-dot">1</span><span>Escolha</span></div>
+      <div class="step"><span class="step-dot">2</span><span>Pague</span></div>
+      <div class="step"><span class="step-dot">3</span><span>Receba</span></div>
+    </div>
 
     <article class="card checkout-card">
       <div class="checkout-product">
@@ -158,6 +236,30 @@ function renderCheckout(p) {
           <i class="fa-solid fa-receipt"></i> Já paguei (gerar código)
         </button>
       </div>
+
+      <div class="checkout-grid">
+        <div class="mini-card">
+          <div class="mini-title"><i class="fa-solid fa-shield"></i> Compra segura</div>
+          <div class="mini-text">Você paga no provedor (Ton/PagBank/etc.) e recebe um código para desbloquear a entrega.</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-title"><i class="fa-solid fa-headset"></i> Suporte</div>
+          <div class="mini-text">Precisou? Fale com o vendedor em 1 toque.</div>
+          ${waLink ? `<a class="ghost-link" href="${escapeAttr(waLink)}" target="_blank" rel="noreferrer">Abrir WhatsApp <i class="fa-solid fa-arrow-up-right-from-square"></i></a>` : `<span class="muted">WhatsApp não configurado</span>`}
+        </div>
+      </div>
+
+      <div class="coupon-row">
+        <div class="field">
+          <label for="couponCode">Cupom</label>
+          <input id="couponCode" type="text" placeholder="EX: BEMVINDO10" />
+        </div>
+        <button class="btn btn-secondary" id="btnApplyCoupon" type="button">
+          <i class="fa-solid fa-ticket"></i> Aplicar
+        </button>
+      </div>
+
+      <div id="priceBox"></div>
 
       <div class="card is-hidden" id="purchaseCodeBox">
         <h3 class="card-title">Seu código de compra</h3>
@@ -180,6 +282,25 @@ function renderCheckout(p) {
   `;
 }
 
+function renderPriceBreakdown(b) {
+  const money = (n) => `R$ ${Number(n || 0).toFixed(2)}`;
+  return `
+    <div class="price-breakdown">
+      <div class="row"><span>Subtotal</span><strong>${money(b.subtotal)}</strong></div>
+      <div class="row"><span>Desconto</span><strong>${money(b.discount)}</strong></div>
+      <div class="row total"><span>Total</span><strong>${money(b.total)}</strong></div>
+    </div>
+  `;
+}
+
+function safeJson(raw, fallback) {
+  try {
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function renderError(msg) {
   return `
     <article class="card">
@@ -197,8 +318,24 @@ function saveOrder(order) {
 }
 
 function makeCode(prefix) {
-  const n = Math.floor(Math.random() * 0xffffff);
-  return `${prefix}-${n.toString(16).toUpperCase().padStart(6, '0')}`;
+  const rand = cryptoRandomHex(8);
+  const time = Date.now().toString(36).toUpperCase();
+  return `${prefix}-${time}-${rand}`;
+}
+
+function cryptoRandomHex(bytes) {
+  try {
+    const arr = new Uint8Array(bytes);
+    crypto.getRandomValues(arr);
+    return Array.from(arr)
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('')
+      .toUpperCase();
+  } catch {
+    let out = '';
+    for (let i = 0; i < bytes; i++) out += Math.floor(Math.random() * 256).toString(16).padStart(2, '0');
+    return out.toUpperCase();
+  }
 }
 
 function escapeHtml(str) {

@@ -28,6 +28,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       setHint(hint, 'Desbloqueado!', false);
+
+      // Salva na Biblioteca local (sem login / sem backend)
+      try {
+        addToLibrary(payload);
+      } catch (e) {
+        console.warn('Falha ao salvar biblioteca:', e);
+      }
+
       if (result) {
         result.classList.remove('is-hidden');
         result.innerHTML = renderPayload(payload);
@@ -35,6 +43,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+const K_LIBRARY = 'library';
+
+function addToLibrary(payload) {
+  const slug = (payload.productSlug || payload.productId || payload.productName || '')
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9\-]/g, '');
+  if (!slug) return;
+
+  const list = safeJson(localStorage.getItem(K_LIBRARY), []);
+  const exists = list.some((i) => i.slug === slug);
+  if (exists) return;
+
+  list.unshift({
+    slug,
+    productId: payload.productId || '',
+    productName: payload.productName || '',
+    unlockedAt: new Date().toISOString()
+  });
+  localStorage.setItem(K_LIBRARY, JSON.stringify(list));
+}
 
 function setHint(el, msg, isError) {
   if (!el) return;
@@ -79,6 +111,31 @@ function renderPayload(p) {
     <p class="card-text">${escapeHtml(p.note || 'Links liberados para este código.')}</p>
     <div class="deliver-actions">${rows.join('')}</div>
   `;
+}
+
+// ===== Biblioteca local =====
+const K_LIBRARY = 'library';
+
+function addToLibrary(payload) {
+  const slug = (payload.productSlug || payload.productId || '').toString();
+  if (!slug) return;
+  const lib = safeJson(localStorage.getItem(K_LIBRARY), []);
+  const exists = lib.some((x) => x.slug === slug);
+  if (exists) return;
+  lib.unshift({
+    slug,
+    productName: payload.productName || '',
+    unlockedAt: new Date().toISOString()
+  });
+  localStorage.setItem(K_LIBRARY, JSON.stringify(lib));
+}
+
+function safeJson(raw, fallback) {
+  try {
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 function escapeHtml(str) {

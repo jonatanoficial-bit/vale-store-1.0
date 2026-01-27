@@ -5,6 +5,15 @@
     "whatsapp": "5500000000000",
     "message": "Olá! Preciso de ajuda com um app da AppVault."
   },
+  "coupons": [
+    {
+      "code": "BEMVINDO10",
+      "type": "percent",
+      "value": 10,
+      "active": true,
+      "expiresAt": "2027-01-01"
+    }
+  ],
   "products": [
     {
       "id": "demo_app",

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Minha Biblioteca • AppVault</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      integrity="sha512-K5m0d+vBL3Ghq4c40M+3L7B5q5RqRGmH8F0aQK2FOpmswHEQAFAJK2b4Z7vdq7pQigz3hbzF/HJT6TwA24TV1Q=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <nav class="topbar">
+      <a class="topbar-back" href="index.html" aria-label="Voltar">
+        <i class="fa-solid fa-arrow-left"></i>
+      </a>
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span class="brand-name">AppVault</span>
+      </div>
+      <a class="topbar-link" href="deliver.html" aria-label="Já comprei">
+        <i class="fa-solid fa-key"></i>
+      </a>
+    </nav>
+
+    <main class="container">
+      <section class="section-head">
+        <div>
+          <h2 class="section-title">Minha Biblioteca</h2>
+          <p class="section-subtitle">Apps que você já desbloqueou neste dispositivo/navegador.</p>
+        </div>
+      </section>
+
+      <section id="libraryList" class="grid"></section>
+
+      <section class="notice">
+        <h3><i class="fa-solid fa-circle-info"></i> Importante</h3>
+        <p>
+          Como este projeto funciona com <strong>0 investimento</strong> e sem backend, sua biblioteca fica salva
+          apenas neste navegador. Se você limpar o cache, precisará desbloquear novamente com o seu código.
+        </p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>© 2026 AppVault. Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="js/library.js"></script>
+  </body>
+</html>

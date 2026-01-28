@@ -230,13 +230,26 @@ function hydrateCategoryDropdown(products) {
 function hydrateWhatsAppFab() {
   const fab = document.getElementById('wa-fab');
   if (!fab) return;
-  const raw = (SITE.support?.whatsapp || '').replace(/\D/g, '');
-  if (!raw || raw.length < 10) {
+  const rawInput = (SITE.support?.whatsapp || '').toString().trim();
+  if (!rawInput) {
     fab.style.display = 'none';
     return;
   }
-  const msg = encodeURIComponent(SITE.support?.message || 'Olá! Preciso de suporte.');
-  fab.href = `https://wa.me/${raw}?text=${msg}`;
+
+  // Aceita:
+  // 1) URL completa (ex.: https://wa.me/qr/XXXX)
+  // 2) Número (ex.: 5511999999999) -> https://wa.me/<num>?text=...
+  if (/^https?:\/\//i.test(rawInput) || rawInput.includes('wa.me/')) {
+    fab.href = rawInput;
+  } else {
+    const raw = rawInput.replace(/\D/g, '');
+    if (!raw || raw.length < 10) {
+      fab.style.display = 'none';
+      return;
+    }
+    const msg = encodeURIComponent(SITE.support?.message || 'Olá! Preciso de suporte.');
+    fab.href = `https://wa.me/${raw}?text=${msg}`;
+  }
   fab.target = '_blank';
 }
 

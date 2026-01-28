@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Administração • AppVault</title>
-    <meta name="description" content="Painel administrativo do AppVault (0 custo): produtos, pedidos, entregas, cupons e configurações." />
+    <title>Administração • Vale Games Store</title>
+    <meta name="description" content="Painel administrativo do Vale Games Store (0 custo): produtos, pedidos, entregas, cupons e configurações." />
     <meta name="theme-color" content="#5b2be0" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="icon" href="assets/default-app.png" />
+    <link rel="icon" href="assets/logo.png" />
     <link rel="stylesheet" href="css/styles.css" />
     <link
       rel="stylesheet"
@@ -135,8 +135,52 @@
             <p class="muted">
               Aqui aparecem os códigos que o cliente gerou após pagar. Você confirma o pagamento e libera a entrega.
             </p>
+            <div class="card" style="padding:12px; margin-top:12px">
+              <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; justify-content:space-between;">
+                <div style="min-width:240px; flex:1">
+                  <label class="muted" for="backendSecret" style="display:block; margin-bottom:6px">Admin Secret (somente para operar o Worker)</label>
+                  <input id="backendSecret" type="password" placeholder="Cole o ADMIN_SECRET do Worker" />
+                </div>
+                <div style="min-width:220px">
+                  <label class="muted" for="backendOrdersFilter" style="display:block; margin-bottom:6px">Filtro</label>
+                  <select id="backendOrdersFilter">
+                    <option value="all">Todos</option>
+                    <option value="created">Criados</option>
+                    <option value="paid">Pagos</option>
+                    <option value="expired">Expirados</option>
+                  </select>
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap">
+                  <button id="ordersModeLocal" class="button secondary" type="button"><i class="fa-solid fa-desktop"></i> Local</button>
+                  <button id="ordersModeBackend" class="button secondary" type="button"><i class="fa-solid fa-cloud"></i> Backend</button>
+                  <button id="refreshBackendOrders" class="button primary" type="button"><i class="fa-solid fa-rotate"></i> Atualizar</button>
+                </div>
+              </div>
+              <p class="muted" style="margin:10px 0 0">
+                Dica: se <code>API_BASE</code> estiver configurado, você consegue listar e operar pedidos direto do Worker (0 custo). Se não estiver, use o modo Local.
+              </p>
+            </div>
+
+            <div class="card" style="padding:12px; margin-top:12px">
+              <h4 style="margin:0 0 8px">Criar pedido manual (venda via WhatsApp)</h4>
+              <p class="muted" style="margin:0 0 10px">Cria um pedido no backend e (opcional) já marca como pago para gerar o link de entrega automaticamente.</p>
+              <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end">
+                <div style="min-width:220px; flex:1">
+                  <label class="muted" for="manualOrderProduct" style="display:block; margin-bottom:6px">Produto</label>
+                  <select id="manualOrderProduct"></select>
+                </div>
+                <label style="display:flex; gap:8px; align-items:center; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10)">
+                  <input id="manualOrderMarkPaid" type="checkbox" />
+                  <span class="muted">Marcar como pago e gerar entrega</span>
+                </label>
+                <button id="createBackendOrderBtn" class="button primary" type="button">
+                  <i class="fa-solid fa-plus"></i> Criar pedido
+                </button>
+              </div>
+            </div>
           </div>
           <div id="ordersList" class="admin-list"></div>
+          <div id="backendOrdersList" class="admin-list hidden"></div>
         </div>
 
         <div id="tab-deliveries" class="tab-panel hidden">
@@ -349,6 +393,7 @@
         </div>
       </div>
     </main>
+    <script src="js/config.js"></script>
     <script src="js/admin.js"></script>
     <script src="js/pwa.js"></script>
   </body>

@@ -9,9 +9,10 @@
 
 /* Variáveis de cores e espaçamentos */
 :root {
-  --color-primary: #5b2be0; /* Roxo vibrante */
-  --color-secondary: #007bff; /* Azul de destaque */
-  --color-accent: #00c6ff; /* Ciano para gradientes */
+  /* Identidade Vale Games Store (ouro + azul) */
+  --color-primary: #d7a21a; /* Ouro */
+  --color-secondary: #1a7cff; /* Azul */
+  --color-accent: #00d1ff; /* Ciano */
   --color-bg: #0e1023; /* Fundo escuro */
   --color-bg-light: #1b1e3c; /* Fundo mais claro para cartões */
   --color-text: #ffffff; /* Texto claro */
@@ -75,6 +76,16 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* Logo oficial (Vale Games) */
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.10);
 }
 
 .brand-mark {

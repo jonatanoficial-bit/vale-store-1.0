@@ -28,7 +28,7 @@ async function boot() {
     return;
   }
 
-  document.title = `Checkout • ${product.name} • AppVault`;
+  document.title = `Checkout • ${product.name} • Vale Games Store`;
   root.innerHTML = renderCheckout(product, ctx.support);
 
   const btnPay = document.getElementById('btnPay');
@@ -85,12 +85,52 @@ async function boot() {
   }
 
   if (btnIpaid) {
-    btnIpaid.addEventListener('click', () => {
-      const purchaseCode = makeCode('AV');
+    btnIpaid.addEventListener('click', async () => {
       const breakdown = calcPrice(product.price, appliedCoupon);
+
+      // Modo automação (Parte 8A): cria pedido no backend e redireciona para status
+      if (typeof API_BASE !== 'undefined' && String(API_BASE || '').trim()) {
+        try {
+          btnIpaid.setAttribute('disabled', 'disabled');
+          const api = String(API_BASE).replace(/\/$/, '');
+          const payload = {
+            slug: product.slug,
+            productId: product.id,
+            productName: product.name,
+            subtotal: product.price,
+            total: breakdown.total,
+            coupon: appliedCoupon ? { code: appliedCoupon.code, type: appliedCoupon.type, value: appliedCoupon.value } : null
+            ,payLink: product.payLink || ''
+            ,android_url: product.android_url || ''
+            ,ios_link: product.ios_link || ''
+            ,web_link: product.web_link || ''
+          };
+          const res = await fetch(`${api}/api/order/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data?.error || 'Falha ao criar pedido');
+
+          // Abre o link de pagamento e acompanha status do pedido
+          if (data.payLink) window.open(data.payLink, '_blank');
+          const orderUrl = data.orderUrl || `order.html?id=${encodeURIComponent(data.orderId)}`;
+          window.location.href = orderUrl;
+          return;
+        } catch (err) {
+          btnIpaid.removeAttribute('disabled');
+          alert(String(err?.message || err));
+          return;
+        }
+      }
+
+      // Modo 100% estático (fallback): gera código para enviar ao vendedor
+      const purchaseCode = makeCode('AV');
       const order = {
         orderId: makeCode('ORD'),
         purchaseCode,
+        slug: product.slug,
         productId: product.id,
         productName: product.name,
         price: product.price,
@@ -102,7 +142,7 @@ async function boot() {
       saveOrder(order);
       if (codeText) codeText.textContent = purchaseCode;
       if (codeBox) codeBox.classList.remove('is-hidden');
-      if (btnIpaid) btnIpaid.setAttribute('disabled', 'disabled');
+      btnIpaid.setAttribute('disabled', 'disabled');
     });
   }
 
@@ -168,6 +208,9 @@ function normalizeProduct(p) {
     image: p.image || 'assets/default-app.png',
     price: typeof p.price === 'number' ? p.price : Number(p.price || 0),
     payLink: p.payLink || '',
+    android_url: p.android_url || '',
+    ios_link: p.ios_link || '',
+    web_link: p.web_link || '',
   };
 }
 
@@ -196,9 +239,12 @@ function calcPrice(price, coupon) {
 function renderCheckout(p, support) {
   const priceLabel = p.price > 0 ? `R$ ${p.price.toFixed(2)}` : 'Grátis';
   const hasPay = !!p.payLink;
-  const buyHint = hasPay
-    ? 'Clique em “Pagar agora” para abrir o link do pagamento.'
-    : 'Este produto está sem link de pagamento. Configure no Admin.';
+  const hasApi = (typeof API_BASE !== 'undefined' && String(API_BASE || '').trim());
+  const buyHint = hasApi
+    ? 'Automação ativa: após abrir o pagamento, você será levado para a tela de status do pedido.'
+    : (hasPay
+      ? 'Clique em “Pagar agora” para abrir o link do pagamento.'
+      : 'Este produto está sem link de pagamento. Configure no Admin.');
 
   const wa = support?.whatsapp ? String(support.whatsapp).replace(/\D/g, '') : '';
   const waMsg = support?.message ? encodeURIComponent(String(support.message)) : encodeURIComponent('Olá! Preciso de ajuda com uma compra.');
@@ -233,7 +279,7 @@ function renderCheckout(p, support) {
         </button>
 
         <button class="btn btn-secondary" id="btnIpaid" type="button">
-          <i class="fa-solid fa-receipt"></i> Já paguei (gerar código)
+          <i class="fa-solid fa-receipt"></i> ${hasApi ? 'Criar pedido e acompanhar' : 'Já paguei (gerar código)'}
         </button>
       </div>
 

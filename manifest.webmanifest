@@ -1,13 +1,18 @@
 {
-  "name": "AppVault - Loja de Apps",
-  "short_name": "AppVault",
+  "name": "Vale Games Store",
+  "short_name": "Vale Games",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#070A14",
-  "theme_color": "#5b2be0",
+  "theme_color": "#d7a21a",
   "icons": [
     {
-      "src": "assets/default-app.png",
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

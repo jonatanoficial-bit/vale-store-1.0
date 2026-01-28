@@ -1,10 +1,13 @@
 /*
- * deliver.js (Parte 1)
+ * deliver.js
  *
- * Sem backend, a entrega precisa de um "cofre local":
- * - O vendedor (Admin) pode cadastrar códigos de entrega no localStorage.
- * - O comprador informa o código e libera os links.
+ * Dois modos:
+ * 1) 100% estático (0 custo): código de entrega no localStorage (Admin libera manualmente)
+ * 2) Automação (Parte 8A): token validado no backend (Cloudflare Worker)
  */
+
+const K_DELIVERIES = 'deliveries';
+const K_LIBRARY = 'library';
 
 document.addEventListener('DOMContentLoaded', () => {
   const input = document.getElementById('deliveryCode');
@@ -12,42 +15,84 @@ document.addEventListener('DOMContentLoaded', () => {
   const hint = document.getElementById('deliverHint');
   const result = document.getElementById('deliverResult');
 
+  // Suporte a token por URL: deliver.html?token=...
+  const token = getParam('token');
+  if (token) {
+    unlockAny(token, { hint, result, input });
+  }
+
   if (btn) {
     btn.addEventListener('click', () => {
-      const code = (input?.value || '').trim().toUpperCase();
+      const code = (input?.value || '').trim();
       if (!code) {
-        setHint(hint, 'Digite um código.', true);
+        setHint(hint, 'Digite um código ou token.', true);
         return;
       }
-
-      const payload = getDeliveryByCode(code);
-      if (!payload) {
-        setHint(hint, 'Código inválido ou ainda não liberado pelo vendedor.', true);
-        if (result) result.classList.add('is-hidden');
-        return;
-      }
-
-      setHint(hint, 'Desbloqueado!', false);
-
-      // Salva na Biblioteca local (sem login / sem backend)
-      try {
-        addToLibrary(payload);
-      } catch (e) {
-        console.warn('Falha ao salvar biblioteca:', e);
-      }
-
-      if (result) {
-        result.classList.remove('is-hidden');
-        result.innerHTML = renderPayload(payload);
-      }
+      unlockAny(code, { hint, result, input });
     });
   }
 });
 
-const K_LIBRARY = 'library';
+async function unlockAny(codeOrToken, ui) {
+  const { hint, result, input } = ui;
+  const value = String(codeOrToken || '').trim();
+  if (!value) return;
 
-function addToLibrary(payload) {
-  const slug = (payload.productSlug || payload.productId || payload.productName || '')
+  // Se existir backend configurado, tenta token primeiro
+  if (typeof API_BASE !== 'undefined' && String(API_BASE || '').trim()) {
+    const payload = await fetchDeliveryFromApi(value);
+    if (payload) {
+      if (input) input.value = value;
+      setHint(hint, 'Entrega liberada ✅', false);
+      saveToLibrary(payload);
+      if (result) {
+        result.classList.remove('is-hidden');
+        result.innerHTML = renderPayload(payload);
+      }
+      return;
+    }
+  }
+
+  // Fallback: cofre local (código tradicional)
+  const code = value.toUpperCase();
+  const payload = getDeliveryByCode(code);
+  if (!payload) {
+    setHint(hint, 'Código/token inválido ou ainda não liberado.', true);
+    if (result) result.classList.add('is-hidden');
+    return;
+  }
+
+  setHint(hint, 'Desbloqueado ✅', false);
+  saveToLibrary(payload);
+  if (result) {
+    result.classList.remove('is-hidden');
+    result.innerHTML = renderPayload(payload);
+  }
+}
+
+async function fetchDeliveryFromApi(token) {
+  try {
+    const api = String(API_BASE).replace(/\/$/, '');
+    const res = await fetch(`${api}/api/deliver/${encodeURIComponent(token)}`);
+    const data = await res.json();
+    if (!res.ok) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function getDeliveryByCode(code) {
+  try {
+    const vault = JSON.parse(localStorage.getItem(K_DELIVERIES) || '{}');
+    return vault[code] || null;
+  } catch {
+    return null;
+  }
+}
+
+function saveToLibrary(payload) {
+  const slug = (payload.productSlug || payload.slug || payload.productId || payload.productName || '')
     .toString()
     .trim()
     .toLowerCase()
@@ -56,27 +101,13 @@ function addToLibrary(payload) {
   if (!slug) return;
 
   const list = safeJson(localStorage.getItem(K_LIBRARY), []);
-  const exists = list.some((i) => i.slug === slug);
-  if (exists) return;
-
+  if (list.some((i) => i.slug === slug)) return;
   list.unshift({
     slug,
-    productId: payload.productId || '',
-    productName: payload.productName || '',
+    productName: payload.productName || payload.name || '',
     unlockedAt: new Date().toISOString()
   });
   localStorage.setItem(K_LIBRARY, JSON.stringify(list));
-}
-
-function setHint(el, msg, isError) {
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = isError ? '#ff7a7a' : 'rgba(230,240,255,0.85)';
-}
-
-function getDeliveryByCode(code) {
-  const vault = JSON.parse(localStorage.getItem('deliveries') || '{}');
-  return vault[code] || null;
 }
 
 function renderPayload(p) {
@@ -108,26 +139,20 @@ function renderPayload(p) {
 
   return `
     <h3 class="card-title">Entrega liberada</h3>
-    <p class="card-text">${escapeHtml(p.note || 'Links liberados para este código.')}</p>
+    <p class="card-text">${escapeHtml(p.note || 'Links liberados para este acesso.')}</p>
     <div class="deliver-actions">${rows.join('')}</div>
   `;
 }
 
-// ===== Biblioteca local =====
-const K_LIBRARY = 'library';
+function getParam(key) {
+  const url = new URL(window.location.href);
+  return (url.searchParams.get(key) || '').trim();
+}
 
-function addToLibrary(payload) {
-  const slug = (payload.productSlug || payload.productId || '').toString();
-  if (!slug) return;
-  const lib = safeJson(localStorage.getItem(K_LIBRARY), []);
-  const exists = lib.some((x) => x.slug === slug);
-  if (exists) return;
-  lib.unshift({
-    slug,
-    productName: payload.productName || '',
-    unlockedAt: new Date().toISOString()
-  });
-  localStorage.setItem(K_LIBRARY, JSON.stringify(lib));
+function setHint(el, msg, isError) {
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = isError ? '#ff7a7a' : 'rgba(230,240,255,0.85)';
 }
 
 function safeJson(raw, fallback) {
@@ -139,9 +164,9 @@ function safeJson(raw, fallback) {
 }
 
 function escapeHtml(str) {
-  return (str || '').toString().replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  return String(str || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 function escapeAttr(str) {
-  return escapeHtml(str).replace(/'/g, '&#39;');
+  return escapeHtml(str);
 }

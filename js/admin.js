@@ -22,6 +22,30 @@ const logoutBtn = document.getElementById('logoutBtn');
 
 const productsListDiv = document.getElementById('productsList');
 const ordersListDiv = document.getElementById('ordersList');
+const backendOrdersListDiv = document.getElementById('backendOrdersList');
+const backendSecretInput = document.getElementById('backendSecret');
+const backendOrdersFilter = document.getElementById('backendOrdersFilter');
+const ordersModeLocalBtn = document.getElementById('ordersModeLocal');
+const ordersModeBackendBtn = document.getElementById('ordersModeBackend');
+const refreshBackendOrdersBtn = document.getElementById('refreshBackendOrders');
+
+// Parte 8A.2 — criar pedido manual no backend
+const manualOrderProduct = document.getElementById('manualOrderProduct');
+const manualOrderMarkPaid = document.getElementById('manualOrderMarkPaid');
+const createBackendOrderBtn = document.getElementById('createBackendOrderBtn');
+
+let ordersMode = 'local'; // 'local' | 'backend'
+let backendOrdersCache = [];
+
+function getApiBase() {
+  // API_BASE é definido em js/config.js e exposto no window
+  const base = (window.API_BASE || '').trim();
+  return base.replace(/\/+$/, '');
+}
+
+function getBackendSecret() {
+  return (backendSecretInput?.value || '').trim();
+}
 const deliveriesListDiv = document.getElementById('deliveriesList');
 const couponsListDiv = document.getElementById('couponsList');
 const salesUl = document.getElementById('salesUl');
@@ -129,6 +153,32 @@ function wireCoreEvents() {
     copyText(msg);
     alert('Mensagem copiada! Cole no WhatsApp.');
   });
+
+  // Pedidos: modo local vs backend
+  ordersModeLocalBtn?.addEventListener('click', () => {
+    ordersMode = 'local';
+    renderOrders();
+  });
+  ordersModeBackendBtn?.addEventListener('click', async () => {
+    ordersMode = 'backend';
+    await refreshBackendOrders();
+  });
+  refreshBackendOrdersBtn?.addEventListener('click', async () => {
+    if (ordersMode !== 'backend') {
+      ordersMode = 'backend';
+    }
+    await refreshBackendOrders();
+  });
+
+  backendOrdersFilter?.addEventListener('change', () => {
+    if (ordersMode === 'backend') {
+      renderOrders();
+    }
+  });
+
+  createBackendOrderBtn?.addEventListener('click', async () => {
+    await createBackendOrderFromAdmin();
+  });
 }
 
 function wireTabs() {
@@ -170,7 +220,20 @@ async function showAdmin() {
 
   await initializeProductsFromManifest();
   await initializeCouponsFromManifest();
+  populateManualOrderProducts();
   renderAll();
+}
+
+function populateManualOrderProducts() {
+  if (!manualOrderProduct) return;
+  const products = getProducts();
+  manualOrderProduct.innerHTML = '';
+  products.forEach((p) => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = `${p.name} • R$ ${Number(p.price || 0).toFixed(2)}`;
+    manualOrderProduct.appendChild(opt);
+  });
 }
 
 function handleLogin(e) {
@@ -501,6 +564,17 @@ function setOrders(orders) {
 
 function renderOrders() {
   if (!ordersListDiv) return;
+  // Alterna UI de acordo com o modo selecionado
+  if (ordersMode === 'backend') {
+    ordersListDiv.classList.add('hidden');
+    backendOrdersListDiv?.classList.remove('hidden');
+    renderBackendOrders();
+    return;
+  }
+
+  backendOrdersListDiv?.classList.add('hidden');
+  ordersListDiv.classList.remove('hidden');
+
   const orders = getOrders();
   ordersListDiv.innerHTML = '';
 
@@ -554,6 +628,215 @@ function renderOrders() {
 
     ordersListDiv.appendChild(el);
   });
+}
+
+// ====== Orders (Backend / Worker) ======
+async function refreshBackendOrders() {
+  const api = getApiBase();
+  if (!api) {
+    alert('API_BASE não está configurado (js/config.js). Use o modo Local por enquanto.');
+    ordersMode = 'local';
+    renderOrders();
+    return;
+  }
+  const secret = getBackendSecret();
+  if (!secret) {
+    alert('Cole o ADMIN_SECRET do Worker para listar/operar pedidos no backend.');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${api}/api/admin/orders?limit=100`, {
+      headers: { 'X-Admin-Secret': secret }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Falha ao carregar pedidos');
+    backendOrdersCache = Array.isArray(data.items) ? data.items : (data.orders || []);
+    ordersMode = 'backend';
+    renderOrders();
+  } catch (err) {
+    alert(String(err?.message || err));
+  }
+}
+
+function renderBackendOrders() {
+  if (!backendOrdersListDiv) return;
+  backendOrdersListDiv.innerHTML = '';
+
+  // botão visual ativo
+  if (ordersModeLocalBtn && ordersModeBackendBtn) {
+    ordersModeLocalBtn.classList.toggle('is-active', ordersMode === 'local');
+    ordersModeBackendBtn.classList.toggle('is-active', ordersMode === 'backend');
+  }
+
+  if (!backendOrdersCache.length) {
+    backendOrdersListDiv.innerHTML = '<p>Nenhum pedido no backend (Worker) ainda. Use o checkout com API_BASE ou crie pedidos no modo Local.</p>';
+    return;
+  }
+
+  const filter = (backendOrdersFilter?.value || 'all').trim();
+  const now = Date.now();
+  const items = backendOrdersCache.filter((o) => {
+    const exp = o.expiresAt ? new Date(o.expiresAt).getTime() : 0;
+    const isExpired = exp && now > exp;
+    if (filter === 'paid') return o.status === 'paid' && !isExpired;
+    if (filter === 'created') return o.status !== 'paid' && !isExpired;
+    if (filter === 'expired') return isExpired;
+    return true;
+  });
+
+  items.forEach((o) => {
+    const createdAt = o.createdAt ? new Date(o.createdAt).toLocaleString() : '';
+    const exp = o.expiresAt ? new Date(o.expiresAt).getTime() : 0;
+    const isExpired = exp && Date.now() > exp;
+    const pill = isExpired ? 'Expirado' : o.status === 'paid' ? 'Pago' : 'Criado';
+    const deliverPath = o.deliverToken ? `deliver.html?token=${encodeURIComponent(o.deliverToken)}` : '';
+    const deliverAbs = o.deliverToken ? `${location.origin}/${deliverPath}` : '';
+
+    const el = document.createElement('div');
+    el.className = 'product-item';
+    el.innerHTML = `
+      <div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <strong>${escapeHtml(o.productName || 'Produto')}</strong>
+          <span class="pill"><i class="fa-solid fa-circle-info"></i> ${escapeHtml(pill)}</span>
+        </div>
+        <div style="opacity:.86; font-size:12px; margin-top:6px;">
+          Pedido: <strong>${escapeHtml(o.orderId || '—')}</strong> • Total: R$ ${Number(o.total || 0).toFixed(2)} • ${escapeHtml(createdAt)}
+        </div>
+        ${deliverPath ? `<div style="opacity:.86; font-size:12px; margin-top:6px;">Entrega: <code>${escapeHtml(deliverPath)}</code></div>` : ''}
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+        <button class="button ${o.status === 'paid' ? 'secondary' : 'primary'}" title="Marcar como pago" ${o.status === 'paid' ? 'disabled' : ''}>
+          <i class="fa-solid fa-check"></i>
+        </button>
+        <button class="button secondary" title="Regenerar token">
+          <i class="fa-solid fa-rotate"></i>
+        </button>
+        <button class="button secondary" title="Copiar link de entrega" ${deliverAbs ? '' : 'disabled'}>
+          <i class="fa-solid fa-link"></i>
+        </button>
+        <button class="button secondary" title="Copiar orderId">
+          <i class="fa-regular fa-copy"></i>
+        </button>
+      </div>
+    `;
+
+    const [btnPaid, btnRegen, btnCopyLink, btnCopy] = el.querySelectorAll('button');
+    btnPaid?.addEventListener('click', () => backendMarkPaid(o.orderId));
+    btnRegen?.addEventListener('click', () => backendRegenerateToken(o.orderId));
+    btnCopyLink?.addEventListener('click', () => copyText(deliverAbs));
+    btnCopy?.addEventListener('click', () => copyText(o.orderId || ''));
+
+    backendOrdersListDiv.appendChild(el);
+  });
+}
+
+async function backendMarkPaid(orderId) {
+  const api = getApiBase();
+  const secret = getBackendSecret();
+  if (!api || !secret) return;
+  try {
+    const res = await fetch(`${api}/api/admin/mark-paid`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': secret },
+      body: JSON.stringify({ orderId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Falha ao marcar como pago');
+    alert(`Pago! Token gerado: ${data.token}`);
+    await refreshBackendOrders();
+  } catch (err) {
+    alert(String(err?.message || err));
+  }
+}
+
+async function backendRegenerateToken(orderId) {
+  const api = getApiBase();
+  const secret = getBackendSecret();
+  if (!api || !secret) return;
+  try {
+    const res = await fetch(`${api}/api/admin/regenerate-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': secret },
+      body: JSON.stringify({ orderId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Falha ao regenerar token');
+    alert(`Novo token: ${data.token}`);
+    await refreshBackendOrders();
+  } catch (err) {
+    alert(String(err?.message || err));
+  }
+}
+
+// Parte 8A.2 — cria pedido manual (ex: venda via WhatsApp) direto no Worker
+async function createBackendOrderFromAdmin() {
+  const api = getApiBase();
+  if (!api) {
+    alert('API_BASE não está configurado (js/config.js).');
+    return;
+  }
+  const secret = getBackendSecret();
+  if (!secret) {
+    alert('Cole o ADMIN_SECRET do Worker para criar pedidos no backend.');
+    return;
+  }
+  const products = getProducts();
+  const productId = String(manualOrderProduct?.value || '').trim();
+  const p = products.find((x) => x.id === productId);
+  if (!p) {
+    alert('Selecione um produto válido.');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${api}/api/admin/create-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': secret },
+      body: JSON.stringify({
+        status: 'created',
+        productId: p.id,
+        slug: p.slug || p.id,
+        productName: p.name,
+        subtotal: Number(p.price || 0),
+        total: Number(p.price || 0),
+        coupon: null,
+        payLink: String(p.payLink || ''),
+        android_url: String(p.android_url || ''),
+        ios_link: String(p.ios_link || ''),
+        web_link: String(p.web_link || '')
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Falha ao criar pedido');
+
+    const orderId = data.orderId;
+    const markPaid = !!manualOrderMarkPaid?.checked;
+
+    // Muda para backend e atualiza lista
+    ordersMode = 'backend';
+
+    if (markPaid) {
+      await backendMarkPaid(orderId);
+      await refreshBackendOrders();
+      // tenta achar o token para copiar link
+      const found = backendOrdersCache.find((o) => o.orderId === orderId);
+      const deliverAbs = found?.deliverToken ? `${location.origin}/deliver.html?token=${encodeURIComponent(found.deliverToken)}` : '';
+      if (deliverAbs) {
+        copyText(deliverAbs);
+        alert(`Pedido criado e pago!\n\nOrderId: ${orderId}\nLink de entrega copiado para a área de transferência.`);
+      } else {
+        alert(`Pedido criado e pago!\n\nOrderId: ${orderId}`);
+      }
+    } else {
+      await refreshBackendOrders();
+      copyText(orderId);
+      alert(`Pedido criado!\n\nOrderId copiado: ${orderId}`);
+    }
+  } catch (err) {
+    alert(String(err?.message || err));
+  }
 }
 
 function deleteOrder(idx) {

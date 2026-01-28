@@ -66,7 +66,7 @@ O jeito mais simples e **100% gratuito** é usar o **GitHub Releases**:
 
 ## 📲 PWA (instalável, 0 custo)
 
-O AppVault inclui **PWA** (manifest + service worker) para:
+O Vale Games Store inclui **PWA** (manifest + service worker) para:
 
 - melhorar performance (cache)
 - funcionar melhor em conexão ruim
@@ -76,7 +76,7 @@ Em Android/Chrome, abra o site e use **Adicionar à tela inicial**.
 
 ## 📲 PWA (instalável)
 
-O AppVault inclui **PWA** (Service Worker + manifest) para:
+O Vale Games Store inclui **PWA** (Service Worker + manifest) para:
 
 - cache/offline básico
 - performance melhor (cache de assets)
@@ -98,6 +98,25 @@ Embora algumas plataformas anunciem a criação de links gratuitamente, **não e
 ## 🔔 Notificação de vendas
 
 Quando um comprador clica em **Comprar**, o sistema registra a venda no `localStorage` e abre o link de pagamento em uma nova aba. Na área administrativa, você pode visualizar a lista de vendas registradas. Para notificações automáticas via e‑mail ou app, será necessário integrar com a API do provedor de pagamento escolhido (por exemplo, a Ton envia notificações no aplicativo do vendedor【511166507530439†L296-L324】). A arquitetura do projeto permite evoluir para um backend caso você deseje implementar notificações mais sofisticadas.
+
+---
+
+## 🤖 Parte 8A — Automação mínima (backend grátis)
+
+Para **automatizar** o fluxo (criar pedido → acompanhar status → liberar entrega com token temporário), use o Cloudflare Worker incluído em `backend/`.
+
+1. Siga o guia em `backend/README_BACKEND.md`.
+2. Cole a URL do Worker em `js/config.js`:
+
+```js
+var API_BASE = 'https://seu-worker.sua-conta.workers.dev';
+```
+
+Quando configurado:
+- o checkout cria um **pedido** no backend e abre a tela `order.html`
+- ao confirmar pagamento (via webhook do gateway, ou manualmente em teste), o backend libera `deliver.html?token=...`
+
+> Observação: para segurança máxima, o ideal é o backend validar o catálogo (Parte 9). Nesta Parte 8A, o backend recebe os links do frontend para manter simplicidade.
 
 ## 🛠️ Futuras melhorias
 

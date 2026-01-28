@@ -32,7 +32,7 @@ async function boot() {
     return;
   }
 
-  document.title = `${product.name} • AppVault`;
+  document.title = `${product.name} • Vale Games Store`;
   applySeo(product);
 
   if (container) container.innerHTML = renderProduct(product, site);
@@ -50,7 +50,7 @@ async function boot() {
 function applySeo(product) {
   const desc = (product.description || product.longDescription || '').toString().slice(0, 160);
   setMeta('description', desc);
-  setMeta('og:title', `${product.name} • AppVault`, true);
+  setMeta('og:title', `${product.name} • Vale Games Store`, true);
   setMeta('og:description', desc, true);
   setMeta('og:type', 'product', true);
 

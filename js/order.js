@@ -73,6 +73,17 @@ function renderOrder(o) {
     : 'Assim que o pagamento for confirmado, esta página libera automaticamente o acesso.';
 
   const deliverUrl = o.deliverUrl || '';
+  const licenseKey = (o.licenseKey || '').trim();
+  const licenseBlock = paid && licenseKey ? `
+    <div class="notice" style="margin-top:14px;">
+      <h3><i class="fa-solid fa-key"></i> Serial (Licença)</h3>
+      <p style="margin:6px 0 10px;">Guarde este serial. Ele ativa o app em até <strong>${Number(o.activationsMax || 2)}</strong> dispositivo(s).</p>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <code style="padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.06);">${escapeHtml(licenseKey)}</code>
+        <button class="btn btn-ghost" type="button" onclick="navigator.clipboard.writeText('${escapeHtml(licenseKey)}')"><i class="fa-regular fa-copy"></i> Copiar serial</button>
+      </div>
+    </div>
+  ` : '';
 
   return `
     <section class="section-head">
@@ -96,6 +107,7 @@ function renderOrder(o) {
           <a class="btn btn-primary" href="${escapeHtml(deliverUrl)}"><i class="fa-solid fa-unlock"></i> Abrir entrega</a>
           <a class="btn btn-ghost" href="library.html"><i class="fa-solid fa-box"></i> Minha biblioteca</a>
         </div>
+        ${licenseBlock}
       ` : `
         <div class="notice" style="margin-top:14px;">
           <h3><i class="fa-solid fa-circle-info"></i> Dica</h3>

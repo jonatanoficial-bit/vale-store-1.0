@@ -113,6 +113,20 @@ function saveToLibrary(payload) {
 function renderPayload(p) {
   const rows = [];
 
+  const licenseSection = p.licenseKey ? `
+    <div class="notice" style="margin-top:14px;">
+      <h3><i class="fa-solid fa-key"></i> Seu Serial (Licença)</h3>
+      <p style="margin:6px 0 10px;">Guarde este serial. Ele ativa o app em até <strong>${Number(p.activationsMax || 2)}</strong> dispositivo(s).</p>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <code style="padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.06);">${escapeHtml(p.licenseKey)}</code>
+        <button class="btn btn-ghost" type="button" onclick="navigator.clipboard.writeText('${escapeAttr(p.licenseKey)}')">
+          <i class="fa-regular fa-copy"></i> Copiar serial
+        </button>
+      </div>
+      <p class="hint" style="margin-top:10px;">Dica: o desenvolvedor pode exigir esse serial dentro do app para reduzir compartilhamento indevido.</p>
+    </div>
+  ` : '';
+
   if (p.android_url) {
     rows.push(
       `<a class="btn btn-primary" href="${escapeAttr(p.android_url)}" target="_blank" rel="noreferrer">
@@ -140,6 +154,7 @@ function renderPayload(p) {
   return `
     <h3 class="card-title">Entrega liberada</h3>
     <p class="card-text">${escapeHtml(p.note || 'Links liberados para este acesso.')}</p>
+    ${licenseSection}
     <div class="deliver-actions">${rows.join('')}</div>
   `;
 }

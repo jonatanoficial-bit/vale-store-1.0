@@ -692,6 +692,7 @@ function renderBackendOrders() {
     const pill = isExpired ? 'Expirado' : o.status === 'paid' ? 'Pago' : 'Criado';
     const deliverPath = o.deliverToken ? `deliver.html?token=${encodeURIComponent(o.deliverToken)}` : '';
     const deliverAbs = o.deliverToken ? `${location.origin}/${deliverPath}` : '';
+    const serial = String(o.licenseKey || '').trim();
 
     const el = document.createElement('div');
     el.className = 'product-item';
@@ -705,6 +706,7 @@ function renderBackendOrders() {
           Pedido: <strong>${escapeHtml(o.orderId || '—')}</strong> • Total: R$ ${Number(o.total || 0).toFixed(2)} • ${escapeHtml(createdAt)}
         </div>
         ${deliverPath ? `<div style="opacity:.86; font-size:12px; margin-top:6px;">Entrega: <code>${escapeHtml(deliverPath)}</code></div>` : ''}
+        ${serial ? `<div style="opacity:.86; font-size:12px; margin-top:6px;">Serial: <code>${escapeHtml(serial)}</code></div>` : ''}
       </div>
       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
         <button class="button ${o.status === 'paid' ? 'secondary' : 'primary'}" title="Marcar como pago" ${o.status === 'paid' ? 'disabled' : ''}>
@@ -716,16 +718,20 @@ function renderBackendOrders() {
         <button class="button secondary" title="Copiar link de entrega" ${deliverAbs ? '' : 'disabled'}>
           <i class="fa-solid fa-link"></i>
         </button>
+        <button class="button secondary" title="Copiar serial" ${serial ? '' : 'disabled'}>
+          <i class="fa-solid fa-key"></i>
+        </button>
         <button class="button secondary" title="Copiar orderId">
           <i class="fa-regular fa-copy"></i>
         </button>
       </div>
     `;
 
-    const [btnPaid, btnRegen, btnCopyLink, btnCopy] = el.querySelectorAll('button');
+    const [btnPaid, btnRegen, btnCopyLink, btnCopySerial, btnCopy] = el.querySelectorAll('button');
     btnPaid?.addEventListener('click', () => backendMarkPaid(o.orderId));
     btnRegen?.addEventListener('click', () => backendRegenerateToken(o.orderId));
     btnCopyLink?.addEventListener('click', () => copyText(deliverAbs));
+    btnCopySerial?.addEventListener('click', () => copyText(serial));
     btnCopy?.addEventListener('click', () => copyText(o.orderId || ''));
 
     backendOrdersListDiv.appendChild(el);
@@ -744,7 +750,13 @@ async function backendMarkPaid(orderId) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error || 'Falha ao marcar como pago');
-    alert(`Pago! Token gerado: ${data.token}`);
+    // Copia link e serial quando possível
+    const token = data.token;
+    const licenseKey = data.licenseKey || '';
+    const deliverAbs = token ? `${location.origin}/deliver.html?token=${encodeURIComponent(token)}` : '';
+    if (deliverAbs) copyText(deliverAbs);
+    const extra = licenseKey ? `\nSerial: ${licenseKey}` : '';
+    alert(`Pago!\n\nLink de entrega${deliverAbs ? ' (copiado)' : ''}:\n${deliverAbs || '—'}${extra}`);
     await refreshBackendOrders();
   } catch (err) {
     alert(String(err?.message || err));
@@ -858,10 +870,13 @@ function confirmAndDeliver(order, idx) {
   if (!ok) return;
 
   const deliveryCode = makeId('DL');
+  const licenseKey = makeLicenseKey();
   const payload = {
     productId: order.productId,
     productSlug,
     productName: order.productName || p.name,
+    licenseKey,
+    activationsMax: 2,
     android_url: p.android_url || '',
     ios_link: p.ios_link || '',
     web_link: p.web_link || '',
@@ -883,9 +898,11 @@ function confirmAndDeliver(order, idx) {
   setOrders(orders);
 
   // UX: mostra código pronto + mensagem sugerida
-  const msg = makeWhatsAppTemplate('delivery').replace('{CODIGO_ENTREGA}', deliveryCode);
+  const msg = makeWhatsAppTemplate('delivery')
+    .replace('{CODIGO_ENTREGA}', deliveryCode)
+    .replace('{SERIAL}', licenseKey);
   alert(
-    `Entrega liberada!\n\nCÓDIGO DE ENTREGA:\n${deliveryCode}\n\nSugestão de mensagem (copiada):\n\n${msg}`
+    `Entrega liberada!\n\nCÓDIGO DE ENTREGA:\n${deliveryCode}\n\nSERIAL (Licença):\n${licenseKey}\n(Ativa em até 2 dispositivos)\n\nSugestão de mensagem (copiada):\n\n${msg}`
   );
   // Copia a mensagem pronta (mais útil que copiar só o código)
   copyText(msg);
@@ -927,7 +944,9 @@ function saveDeliveryManual(e) {
     android_url: (document.getElementById('deliveryAndroid')?.value || '').trim(),
     ios_link: (document.getElementById('deliveryIOS')?.value || '').trim(),
     web_link: (document.getElementById('deliveryWeb')?.value || '').trim(),
-    note: (document.getElementById('deliveryNote')?.value || '').trim()
+    note: (document.getElementById('deliveryNote')?.value || '').trim(),
+    licenseKey: makeLicenseKey(),
+    activationsMax: 2
   };
 
   const vault = getDeliveries();
@@ -1097,7 +1116,7 @@ function makeWhatsAppTemplate(kind) {
   const support = safeJson(localStorage.getItem('support'), {});
   const base = support.message ? String(support.message) : 'Olá!';
   if (kind === 'delivery') {
-    return `${base}\n\n✅ Pagamento confirmado.\n\nCódigo de entrega: {CODIGO_ENTREGA}\n\nAbra: deliver.html\nCole o código e baixe/acesse seus links.\n\nSe precisar, me chame aqui.`;
+    return `${base}\n\n✅ Pagamento confirmado.\n\nCódigo de entrega: {CODIGO_ENTREGA}\nSerial (licença): {SERIAL}\n(até 2 dispositivos)\n\nAbra: deliver.html\nCole o código e baixe/acesse seus links.\n\nSe precisar, me chame aqui.`;
   }
   return `${base}\n\n📌 Para confirmar sua compra, me envie:\n1) Comprovante\n2) Código de compra: {CODIGO_COMPRA}\n\nAssim que eu validar, te envio o código de entrega.`;
 }
@@ -1196,6 +1215,17 @@ function makeId(prefix) {
   const rand = cryptoRandomHex(8);
   const time = Date.now().toString(36).toUpperCase();
   return `${prefix}-${time}-${rand}`;
+}
+
+function makeLicenseKey() {
+  // Serial amigável para o usuário (sem caracteres ambíguos)
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const chunk = () => {
+    let s = '';
+    for (let i = 0; i < 4; i++) s += alphabet[Math.floor(Math.random() * alphabet.length)];
+    return s;
+  };
+  return `VG-${chunk()}-${chunk()}-${chunk()}`;
 }
 
 function cryptoRandomHex(bytes) {

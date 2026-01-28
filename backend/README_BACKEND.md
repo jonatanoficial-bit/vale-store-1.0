@@ -13,9 +13,10 @@ Este backend serve para **automatizar** o fluxo de venda com custo zero:
 2. No painel, procure **Workers & Pages**
 
 ## 2) Criar KV (Free)
-Você precisa de **2 KV Namespaces**:
+Você precisa de **3 KV Namespaces**:
 - `ORDERS`
 - `TOKENS`
+- `LICENSES` (serial/licenças — limite de ativações por dispositivo)
 
 No painel Cloudflare:
 Workers & Pages → KV → Create namespace.
@@ -29,6 +30,7 @@ Workers & Pages → KV → Create namespace.
 4. Em **Bindings**, adicione:
    - KV Namespace Binding: `ORDERS`
    - KV Namespace Binding: `TOKENS`
+   - KV Namespace Binding: `LICENSES`
 
 ## 4) Conectar o site (frontend)
 Abra `js/config.js` e cole a URL do Worker:

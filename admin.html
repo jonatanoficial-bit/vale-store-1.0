@@ -21,6 +21,7 @@
       rel="stylesheet"
     />
   </head>
+
   <body>
     <header class="admin-header">
       <h1>Área do Administrador</h1>
@@ -28,21 +29,18 @@
         <i class="fa-solid fa-sign-out-alt"></i> Sair
       </button>
     </header>
+
     <main class="admin-container">
       <!-- Tela de login -->
       <section id="loginSection" class="login-section">
         <h2>Login</h2>
         <form id="loginForm">
           <label for="password">Senha de Administrador:</label>
-          <input
-            type="password"
-            id="password"
-            required
-            placeholder="Digite sua senha"
-          />
+          <input type="password" id="password" required placeholder="Digite sua senha" />
           <button type="submit" class="button primary">Entrar</button>
         </form>
       </section>
+
       <!-- Tela principal de administração -->
       <section id="adminSection" class="hidden">
         <div class="admin-actions">
@@ -92,6 +90,7 @@
             <p class="muted">Resumo operacional (0 custo): pedidos, entregas, receita estimada e top apps.</p>
           </div>
           <div id="dashboardGrid" class="dash-grid"></div>
+
           <div class="card" style="padding:16px; margin-top:12px">
             <h4 style="margin:0 0 10px">Mensagens prontas (WhatsApp)</h4>
             <p class="muted" style="margin:0 0 10px">
@@ -105,7 +104,9 @@
                 <i class="fa-solid fa-copy"></i> Copiar mensagem (código de entrega)
               </button>
             </div>
-            <p class="muted" style="margin:10px 0 0">Dica: você pode personalizar os textos no arquivo <code>content/manifest.json</code> (campo <code>support.message</code>).</p>
+            <p class="muted" style="margin:10px 0 0">
+              Dica: você pode personalizar os textos no arquivo <code>content/manifest.json</code> (campo <code>support.message</code>).
+            </p>
           </div>
 
           <div class="dash-split">
@@ -135,6 +136,7 @@
             <p class="muted">
               Aqui aparecem os códigos que o cliente gerou após pagar. Você confirma o pagamento e libera a entrega.
             </p>
+
             <div class="card" style="padding:12px; margin-top:12px">
               <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; justify-content:space-between;">
                 <div style="min-width:240px; flex:1">
@@ -179,6 +181,7 @@
               </div>
             </div>
           </div>
+
           <div id="ordersList" class="admin-list"></div>
           <div id="backendOrdersList" class="admin-list hidden"></div>
         </div>
@@ -262,6 +265,7 @@
           </div>
         </div>
       </section>
+
       <!-- Modal de produto -->
       <div id="productModal" class="modal hidden">
         <div class="modal-content">
@@ -293,7 +297,7 @@
         </div>
       </div>
 
-      <!-- Modal de cupom -->
+      <!-- Modal de cupom (APENAS 1 - removido duplicado) -->
       <div id="couponModal" class="modal hidden">
         <div class="modal-content">
           <span class="close" id="closeCouponModal">&times;</span>
@@ -356,45 +360,11 @@
           </form>
         </div>
       </div>
-
-      <!-- Modal de cupom -->
-      <div id="couponModal" class="modal hidden">
-        <div class="modal-content">
-          <span class="close" id="closeCouponModal">&times;</span>
-          <h2 id="couponModalTitle">Novo cupom</h2>
-          <form id="couponForm">
-            <input type="hidden" id="couponIndex" />
-
-            <label for="couponCode">Código</label>
-            <input type="text" id="couponCode" placeholder="EX: BEMVINDO10" required />
-
-            <label for="couponType">Tipo</label>
-            <select id="couponType" required>
-              <option value="percent">Percentual (%)</option>
-              <option value="fixed">Valor fixo (R$)</option>
-            </select>
-
-            <label for="couponValue">Valor</label>
-            <input type="number" id="couponValue" min="0" step="0.01" required />
-
-            <label for="couponExpires">Validade (opcional)</label>
-            <input type="date" id="couponExpires" />
-
-            <label class="checkbox-row">
-              <input type="checkbox" id="couponActive" checked />
-              <span>Ativo</span>
-            </label>
-
-            <div class="modal-actions">
-              <button type="submit" class="button primary">Salvar</button>
-              <button type="button" id="cancelCouponBtn" class="button secondary">Cancelar</button>
-            </div>
-          </form>
-        </div>
-      </div>
     </main>
-    <script src="js/config.js"></script>
-    <script src="js/admin.js"></script>
-    <script src="js/pwa.js"></script>
+
+    <!-- Cache-busting para evitar PWA/ServiceWorker servir JS antigo -->
+    <script src="js/config.js?v=20260202"></script>
+    <script src="js/admin.js?v=20260202"></script>
+    <script src="js/pwa.js?v=20260202"></script>
   </body>
 </html>

@@ -4,4 +4,4 @@
 //   const API_BASE = 'https://seu-worker.seudominio.workers.dev';
 
 // Use "var" para expor no window (facilita acesso em múltiplos scripts)
-var API_BASE = '';
+var API_BASE = "https://rough-queen-4789.sacvaleproducao.workers.dev";

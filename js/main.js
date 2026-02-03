@@ -109,7 +109,15 @@ function wireUI() {
   }
 }
 
-async function loadCatalog() {
+async function loadCatalog(){
+  // Se Supabase estiver configurado, usa catálogo online
+  if(typeof sbConfigured==='function' && sbConfigured()){
+    try{
+      const rows = await sbSelect('products', {'select':'*','order':'updated_at.desc'}, {jwt:null});
+      window.__VGS_CATALOG_OVERRIDE__ = rows;
+    }catch(e){ /* fallback silencioso */ }
+  }
+
   try {
     const response = await fetch('content/manifest.json');
     const data = await response.json();
@@ -230,26 +238,13 @@ function hydrateCategoryDropdown(products) {
 function hydrateWhatsAppFab() {
   const fab = document.getElementById('wa-fab');
   if (!fab) return;
-  const rawInput = (SITE.support?.whatsapp || '').toString().trim();
-  if (!rawInput) {
+  const raw = (SITE.support?.whatsapp || '').replace(/\D/g, '');
+  if (!raw || raw.length < 10) {
     fab.style.display = 'none';
     return;
   }
-
-  // Aceita:
-  // 1) URL completa (ex.: https://wa.me/qr/XXXX)
-  // 2) Número (ex.: 5511999999999) -> https://wa.me/<num>?text=...
-  if (/^https?:\/\//i.test(rawInput) || rawInput.includes('wa.me/')) {
-    fab.href = rawInput;
-  } else {
-    const raw = rawInput.replace(/\D/g, '');
-    if (!raw || raw.length < 10) {
-      fab.style.display = 'none';
-      return;
-    }
-    const msg = encodeURIComponent(SITE.support?.message || 'Olá! Preciso de suporte.');
-    fab.href = `https://wa.me/${raw}?text=${msg}`;
-  }
+  const msg = encodeURIComponent(SITE.support?.message || 'Olá! Preciso de suporte.');
+  fab.href = `https://wa.me/${raw}?text=${msg}`;
   fab.target = '_blank';
 }
 

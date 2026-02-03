@@ -129,3 +129,18 @@ Quando configurado:
 ## 📄 Licença
 
 Este projeto é fornecido como demonstração e não possui uma licença específica. Adapte‑o conforme necessário para seu uso pessoal ou comercial.
+
+## Backend gratuito alternativo (recomendado): Supabase (sem Cloudflare)
+
+1. Crie um projeto (Free).
+2. No SQL Editor, execute `supabase/schema.sql`.
+3. Em **Auth → Users**, crie 1 usuário admin com o email definido em `js/config.js` (SUPABASE_ADMIN_EMAIL) e defina uma senha forte.
+4. Copie **Project URL** e **anon public key** (Settings → API) e cole em `js/config.js`.
+5. Publique no GitHub Pages normalmente.
+
+### Como funciona a segurança (serial)
+- Após pagamento confirmado, você marca o pedido como **pago** no Admin (modo Backend).
+- O sistema gera um **token** (código de entrega) e cria uma linha em `deliveries`.
+- O cliente entra em `deliver.html`, digita o token e o site libera os links.
+
+> Observação: como o site é estático, isso reduz bastante o compartilhamento, mas não elimina 100% (qualquer sistema baseado em link/token pode ser compartilhado). O próximo passo “AAA” é validar dispositivo/conta (precisa app/backend).

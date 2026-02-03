@@ -246,19 +246,9 @@ function renderCheckout(p, support) {
       ? 'Clique em “Pagar agora” para abrir o link do pagamento.'
       : 'Este produto está sem link de pagamento. Configure no Admin.');
 
-  const waInput = support?.whatsapp ? String(support.whatsapp).trim() : '';
-  let waLink = '';
-  if (waInput) {
-    if (/^https?:\/\//i.test(waInput) || waInput.includes('wa.me/')) {
-      waLink = waInput;
-    } else {
-      const wa = waInput.replace(/\D/g, '');
-      if (wa && wa.length >= 10) {
-        const waMsg = support?.message ? encodeURIComponent(String(support.message)) : encodeURIComponent('Olá! Preciso de ajuda com uma compra.');
-        waLink = `https://wa.me/${wa}?text=${waMsg}`;
-      }
-    }
-  }
+  const wa = support?.whatsapp ? String(support.whatsapp).replace(/\D/g, '') : '';
+  const waMsg = support?.message ? encodeURIComponent(String(support.message)) : encodeURIComponent('Olá! Preciso de ajuda com uma compra.');
+  const waLink = wa ? `https://wa.me/${wa}?text=${waMsg}` : '';
 
   return `
     <section class="section-head">

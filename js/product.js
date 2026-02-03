@@ -234,20 +234,10 @@ function renderProduct(p, site) {
     `;
   }).join('');
 
-  const waInput = (site?.support?.whatsapp || '').toString().trim();
-  let waHref = '';
-  if (waInput) {
-    if (/^https?:\/\//i.test(waInput) || waInput.includes('wa.me/')) {
-      waHref = waInput;
-    } else {
-      const waRaw = waInput.replace(/\D/g, '');
-      if (waRaw && waRaw.length >= 10) {
-        const waMsg = encodeURIComponent(site?.support?.message || `Olá! Tenho dúvidas sobre o app: ${p.name}`);
-        waHref = `https://wa.me/${waRaw}?text=${waMsg}`;
-      }
-    }
-  }
-  const waOk = !!waHref;
+  const waRaw = (site?.support?.whatsapp || '').replace(/\D/g, '');
+  const waOk = waRaw && waRaw.length >= 10;
+  const waMsg = encodeURIComponent(site?.support?.message || `Olá! Tenho dúvidas sobre o app: ${p.name}`);
+  const waHref = waOk ? `https://wa.me/${waRaw}?text=${waMsg}` : '';
 
   return `
     <div class="product-hero">

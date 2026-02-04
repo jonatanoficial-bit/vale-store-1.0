@@ -275,7 +275,34 @@ function initBackendUI(){
   });
 }
 
+// Abas do painel (Dashboard / Produtos / Pedidos / Entregas / Config)
+function initTabs(){
+  const tabBtns = Array.from(document.querySelectorAll('.segmented-btn[data-tab]'));
+  const panes = Array.from(document.querySelectorAll('.tab-pane'));
+  if(!tabBtns.length || !panes.length) return;
+
+  const showTab = (tab)=>{
+    tabBtns.forEach(b=>b.classList.toggle('active', b.dataset.tab === tab));
+    panes.forEach(p=>p.style.display = (p.id === `tab-${tab}` ? '' : 'none'));
+  };
+
+  tabBtns.forEach(btn=>{
+    btn.addEventListener('click', ()=>showTab(btn.dataset.tab));
+  });
+
+  // Botões do topo apontam para abas
+  $('addAppBtn')?.addEventListener('click', ()=>showTab('produtos'));
+  $('exportBtn')?.addEventListener('click', ()=>showTab('dashboard'));
+  $('importBtn')?.addEventListener('click', ()=>showTab('config'));
+  $('exportBackupBtn')?.addEventListener('click', ()=>showTab('dashboard'));
+
+  // Aba inicial: tenta manter a que já estava ativa no HTML
+  const current = tabBtns.find(b=>b.classList.contains('active'))?.dataset.tab;
+  showTab(current || 'dashboard');
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
+  initTabs();
   initLogin();
   initBackendUI();
   fillProductSelect().catch(()=>{});

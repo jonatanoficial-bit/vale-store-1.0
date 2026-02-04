@@ -33,14 +33,14 @@
       <section id="loginSection" class="login-section">
         <h2>Login</h2>
         <form id="loginForm">
-          <label for="password">Senha de Administrador:</label>
+          <label for="adminPassword">Senha de Administrador:</label>
           <input
             type="password"
-            id="password"
+            id="adminPassword"
             required
             placeholder="Digite sua senha"
           />
-          <button type="submit" class="button primary">Entrar</button>
+          <button type="submit" id="loginBtn" class="button primary">Entrar</button>
         </form>
       </section>
       <!-- Tela principal de administração -->
@@ -393,8 +393,7 @@
         </div>
       </div>
     </main>
-    \1
-    <script src="js/supabase.js"></script>
+    <script src="js/config.js"></script>
     <script src="js/admin.js"></script>
     <script src="js/pwa.js"></script>
   </body>
